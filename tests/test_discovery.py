@@ -3,6 +3,7 @@ import pytest
 import requests_mock
 
 from highlight.discovery import NUPNPDiscovery, StaticHostDiscovery
+from highlight.discovery import DefaultDiscovery
 from highlight.exceptions import DiscoveryFailed
 
 
@@ -56,3 +57,29 @@ class TestStaticHostDiscovery(object):
         assert "philips-hue" == StaticHostDiscovery().discover_host()
 
 
+class TestDefaultDiscovery(object):
+    def test_static_host(self, mock_request):
+        mock_request.get("http://philips-hue/description.xml", text="Philips")
+
+        discovery = DefaultDiscovery()
+        connection_info = discovery.discover()
+
+        assert connection_info.host == 'philips-hue'
+
+    def test_nupnp_discovery(self, mock_request):
+        mock_request.get("http://philips-hue/description.xml", status_code=404)
+        data = {"internalipaddress": "ip"}
+        mock_request.get(NUPNPDiscovery.NUPNP_URL, json=[data])
+        mock_request.get("http://ip/description.xml", text="Philips")
+
+        discovery = DefaultDiscovery()
+        connection_info = discovery.discover()
+
+        assert connection_info.host == 'ip'
+
+    def test_all_methods_failed(self, mock_request):
+        mock_request.get("http://philips-hue/description.xml", status_code=404)
+        mock_request.get(NUPNPDiscovery.NUPNP_URL, status_code=404)
+
+        with pytest.raises(DiscoveryFailed):
+            DefaultDiscovery().discover()
