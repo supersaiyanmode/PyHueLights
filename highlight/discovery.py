@@ -3,35 +3,32 @@ This module contains all the discovery method used to discover the Philips
 Hue bridge on the current network.
 """
 
-
 import requests
 
-from .core import Bridge
+from .core import HueConnectionInfo
 from .exceptions import DiscoveryFailed
 
 
 class BaseDiscovery(object):
     def discover(self):
         host = self.discover_host()
-        self.validate_host(host)
-        self.discovery_finished(host)
-        return Bridge(host)
+        connection_info = self.validate_host()
+        return self.discovery_finished(connection_info)
 
     def validate_host(self, host):
-        print("Validating..")
-        resp = requests.get("http://{}/description.xml".format(host))
-        if resp.status_code != 200:
+        connection_info = HueConnectionInfo(host)
+
+        if not connection_info.validate():
             raise DiscoveryFailed
 
-        if "Philips" not in resp.text:
-            raise DiscoveryFailed
+        return connection_info
 
     def discover_host(self):
         """ Needs to be overridden according to different discovery methods. """
         raise NotImplementedError
 
-    def discovery_finished(self, host):
-        pass
+    def discovery_finished(self, connection_info):
+        return connection_info
 
 
 class NUPNPDiscovery(BaseDiscovery):
@@ -45,7 +42,7 @@ class NUPNPDiscovery(BaseDiscovery):
     def discover_host(self):
         try:
             obj = requests.get(self.NUPNP_URL).json()
-        except requests.exceptions.RequestsWarning:
+        except requests.exceptions.RequestException:
             raise DiscoveryFailed
 
         if not isinstance(obj, list) and len(obj) != 1:
