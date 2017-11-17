@@ -98,6 +98,13 @@ class HueApp(HueResource):
     def format_url(self, connection_info):
         return "http://{}/api".format(connection_info.host)
 
+class Light(HueResource):
+    FIELDS = [
+        {"name": "type", "readonly": True},
+        {"name": "model_id", "field": "modelid", "readonly": True},
+        {"name": "software_version", "field": "swversion", "readonly": True},
+        {"name": "name"}
+    ]
 
 class Bridge(object):
     """ Represents a Philips Hue bridge."""
