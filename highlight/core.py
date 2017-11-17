@@ -6,6 +6,24 @@ import requests
 from .exceptions import RequestFailed
 
 
+def make_property(obj, attr_name, obj_prop_name, field_info, dirty):
+    def getter_func(self):
+        return getattr(self, attr_name)
+
+    def setter_func(self, val):
+        setattr(self, attr_name, val)
+        dirty[obj_prop_name] = True
+
+
+    if field_info.get("readonly", False):
+        prop = property(fget=getter_func)
+    else:
+        prop = property(fget=getter_func, fset=setter_func)
+        dirty[obj_prop_name] = False
+
+    setattr(obj.__class__, obj_prop_name, prop)
+
+
 class HueConnectionInfo(object):
     """ Represents the result of a Hue Bridge discovery. """
     def __init__(self, host, username=None):
@@ -27,6 +45,7 @@ class HueResource(object):
     def __init__(self, connection_info, relative_url):
         self.connection_info = connection_info
         self.relative_url = relative_url
+        self.dirty_flag = {}
 
     def get(self, relative_url=None):
         return self.make_request('get')
@@ -55,6 +74,19 @@ class HueResource(object):
         return "http://{}/api/{}/{}".format(connection_info.host,
                                             connection_info.username,
                                             self.relative_url)
+
+    def update_from_object(self, obj):
+        for field_info in self.FIELDS:
+            json_item_name = field_info.get('field', field_info["name"])
+            obj_prop_name = field_info["name"]
+            obj_attr_name = "field_" + obj_prop_name
+
+            if json_item_name not in obj:
+                raise ValueError("No field in object: " + json_item_name)
+
+            setattr(self, obj_attr_name, obj[json_item_name])
+            make_property(self, obj_attr_name, obj_prop_name, field_info,
+                          self.dirty_flag)
 
 
 class HueApp(HueResource):
