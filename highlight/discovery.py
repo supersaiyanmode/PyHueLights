@@ -13,7 +13,7 @@ from .exceptions import DiscoveryFailed
 class BaseDiscovery(object):
     def discover(self):
         host = self.discover_host()
-        connection_info = self.validate_host()
+        connection_info = self.validate_host(host)
         return self.discovery_finished(connection_info)
 
     def validate_host(self, host):
