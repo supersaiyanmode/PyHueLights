@@ -62,7 +62,7 @@ class HueResource(object):
 
         url = self.format_url(self.connection_info, relative_url)
         response = getattr(requests, method)(url, *args, **kwargs)
-        if response.status_code not in expected_status:
+        if expected_status and response.status_code not in expected_status:
             raise RequestFailed(response.status_code, response.text)
         return response.json()
 
@@ -73,7 +73,7 @@ class HueResource(object):
         """
         return "http://{}/api/{}/{}".format(connection_info.host,
                                             connection_info.username,
-                                            self.relative_url)
+                                            relative_url or self.relative_url)
 
     def update_from_object(self, obj):
         for field_info in self.FIELDS:
