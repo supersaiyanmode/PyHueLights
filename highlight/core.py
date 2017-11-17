@@ -14,7 +14,6 @@ def make_property(obj, attr_name, obj_prop_name, field_info, dirty):
         setattr(self, attr_name, val)
         dirty[obj_prop_name] = True
 
-
     if field_info.get("readonly", False):
         prop = property(fget=getter_func)
     else:
@@ -98,6 +97,7 @@ class HueApp(HueResource):
     def format_url(self, connection_info):
         return "http://{}/api".format(connection_info.host)
 
+
 class Light(HueResource):
     FIELDS = [
         {"name": "type", "readonly": True},
@@ -106,7 +106,8 @@ class Light(HueResource):
         {"name": "name"}
     ]
 
-class Bridge(object):
+
+class Bridge(HueResource):
     """ Represents a Philips Hue bridge."""
 
     def __init__(self, host):
