@@ -3,6 +3,8 @@
 
 import requests
 
+from .exceptions import RequestFailed
+
 
 class HueConnectionInfo(object):
     """ Represents the result of a Hue Bridge discovery. """
@@ -26,19 +28,26 @@ class HueResource(object):
         self.connection_info = connection_info
         self.relative_url = relative_url
 
-    def get(self):
-        url = self.format_url(self.connection_info)
-        return requests.get(url).json()
+    def get(self, relative_url=None):
+        return self.make_request('get')
 
-    def put(self, params):
-        url = self.format_url(self.connection_info)
-        return requests.put(url, json=params).json()
+    def put(self, params, relative_url=None):
+        return self.make_request('put')
 
-    def delete(self):
-        url = self.format_url(self.connection_info)
-        return requests.delete(url).json()
+    def delete(self, relative_url=None):
+        return self.make_request('delete', relative_url=relative_url)
 
-    def format_url(self, connection_info):
+    def make_request(self, method, *args, **kwargs):
+        expected_status = kwargs.pop('expected_status', [])
+        relative_url = kwargs.pop('relative_url', self.relative_url)
+
+        url = self.format_url(self.connection_info, relative_url)
+        response = getattr(requests, method)(url, *args, **kwargs)
+        if response.status_code not in expected_status:
+            raise RequestFailed(response.status_code, response.text)
+        return response.json()
+
+    def format_url(self, connection_info, relative_url=None):
         """
         Use connection_info and relative_url to construct the HTTP resource
         URL.
