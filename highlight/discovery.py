@@ -3,7 +3,6 @@ This module contains all the discovery method used to discover the Philips
 Hue bridge on the current network.
 """
 
-import json
 import requests
 
 from .core import HueConnectionInfo
@@ -45,7 +44,7 @@ class NUPNPDiscovery(BaseDiscovery):
             obj = requests.get(self.NUPNP_URL).json()
         except requests.exceptions.RequestException:
             raise DiscoveryFailed
-        except json.decoder.JSONDecodeError:
+        except ValueError:
             raise DiscoveryFailed
 
         if not isinstance(obj, list) and len(obj) != 1:
