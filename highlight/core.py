@@ -41,27 +41,33 @@ class HueConnectionInfo(object):
         return True
 
 
+class Get(object):
+    def get(self, relative_url=None, **kwargs):
+        return self.make_request('get', relative_url=relative_url, **kwargs)
+
+
+class Post(object):
+    def post(self, obj, relative_url=None, **kwargs):
+        return self.make_request('post', relative_url=relative_url, **kwargs)
+
+
+class Put(object):
+    def put(self, obj, relative_url=None, **kwargs):
+        return self.make_request('put', relative_url=relative_url, **kwargs)
+
+
 class HueResource(object):
     def __init__(self, connection_info, parent=None):
         self.connection_info = connection_info
         self.parent = parent
         self.dirty_flag = {}
 
-    def get(self, relative_url=None):
-        return self.make_request('get')
-
-    def put(self, params, relative_url=None):
-        return self.make_request('put')
-
-    def delete(self, relative_url=None):
-        return self.make_request('delete', relative_url=relative_url)
-
-    def make_request(self, method, *args, **kwargs):
+    def make_request(self, method, **kwargs):
         expected_status = kwargs.pop('expected_status', [])
         relative_url = kwargs.pop('relative_url', self.relative_url)
 
         url = self.format_url(self.connection_info, relative_url)
-        response = getattr(requests, method)(url, *args, **kwargs)
+        response = getattr(requests, method)(url, **kwargs)
         if expected_status and response.status_code not in expected_status:
             raise RequestFailed(response.status_code, response.text)
         return response.json()
