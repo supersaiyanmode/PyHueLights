@@ -57,5 +57,5 @@ class TestRegistration(object):
         ]
 
         store = {}
-        assert "abc" == register("host", "", store)
+        assert register("host", "", store) == "abc"
         assert store == {"username": "abc"}
