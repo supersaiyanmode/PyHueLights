@@ -12,3 +12,20 @@ class DiscoveryFailed(HighlightException):
     """ Unable to discover the Hue Bridge. """
     def __init__(self):
         super(DiscoveryFailed, self).__init__("No Hue bridges found.")
+
+
+class RequestFailed(HighlightException):
+    """
+    Raised for all exceptions stemming from failure in requesting info from
+    the bridge.
+    """
+    def __init__(self, response):
+        super(RequestFailed, self).__init__("Request to bridge failed.")
+        self.response = response
+
+
+class RegistrationFailed(HighlightException):
+    """ Raised when registration fails because of any reason."""
+
+    def __init__(self, msg="Registration failed."):
+        super(RegistrationFailed, self).__init__(msg)
