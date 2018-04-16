@@ -22,3 +22,10 @@ class RequestFailed(HighlightException):
     def __init__(self, response):
         super(RequestFailed, self).__init__("Request to bridge failed.")
         self.response = response
+
+
+class RegistrationFailed(HighlightException):
+    """ Raised when registration fails because of any reason."""
+
+    def __init__(self, msg="Registration failed."):
+        super(RegistrationFailed, self).__init__(msg)
