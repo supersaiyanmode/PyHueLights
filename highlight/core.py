@@ -53,6 +53,7 @@ class LightState(HueResource):
 
 class Light(HueResource):
     FIELDS = [
+        {"name": "id", "field": "$KEY"},
         {"name": "type", "readonly": True},
         {"name": "model_id", "field": "modelid", "readonly": True},
         {"name": "software_version", "field": "swversion", "readonly": True},

@@ -22,19 +22,21 @@ def make_property(obj, attr_name, obj_prop_name, field_info):
     setattr(obj.__class__, obj_prop_name, prop)
 
 
-def update_from_object(result, obj, fields):
+def update_from_object(result, key, obj, fields):
     for field_info in fields:
         sub_resource = field_info.get('cls')
         json_item_name = field_info.get('field', field_info["name"])
         obj_prop_name = field_info["name"]
         obj_attr_name = "field_" + obj_prop_name
 
-        if json_item_name not in obj:
+        if json_item_name != "$KEY" and json_item_name not in obj:
             raise ValueError("No field in object: " + json_item_name)
 
         if sub_resource:
             value = sub_resource(parent=obj)
-            update_from_object(value, obj[json_item_name], value.FIELDS)
+            update_from_object(value, None, obj[json_item_name], value.FIELDS)
+        elif json_item_name == "$KEY":
+            value = key
         else:
             value = obj[json_item_name]
 
@@ -42,15 +44,12 @@ def update_from_object(result, obj, fields):
         make_property(result, obj_attr_name, obj_prop_name, field_info)
 
 
-def dict_parser(cls, key_field=None):
+def dict_parser(cls):
     def parser(response):
         obj = {}
         for key, value in response.items():
             result = cls()
-            update_from_object(result, value, result.FIELDS)
-            if key_field:
-                setattr(result, key_field, key)
-
+            update_from_object(result, key, value, result.FIELDS)
             obj[key] = result
         return obj
 
@@ -99,6 +98,6 @@ class LightsManager(BaseResourceManager):
         'get_all_lights': {
             'relative_url': '/lights',
             'method': 'get',
-            'parser': dict_parser(Light, key_field="id")
+            'parser': dict_parser(Light)
         }
     }
