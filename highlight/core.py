@@ -129,7 +129,7 @@ class LightState(HueResource):
     FIELDS = [
         {"name": "on"},
         {"name": "reachable", "readonly": True},
-        {"name": "colormode", "field": "color_mode", "readonly": True},
+        {"name": "color_mode", "field": "colormode", "readonly": True},
     ]
 
     def format_url(self):
