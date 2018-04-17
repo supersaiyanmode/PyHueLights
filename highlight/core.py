@@ -15,10 +15,7 @@ class HueConnectionInfo(object):
         if resp.status_code != 200:
             return False
 
-        if "Philips" not in resp.text:
-            return False
-
-        return True
+        return "Philips" in resp.text
 
 
 class BaseRequest(object):
