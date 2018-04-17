@@ -23,11 +23,9 @@ class HueResource(object):
         self.parent = parent
         self.dirty_flag = {}
 
-
-    def format_url(self):
+    def relative_url(self):
         """
-        Use connection_info and relative_url to construct the HTTP resource
-        URL.
+        Returns relative_url to construct the HTTP resource URL.
         """
         return ""
 
@@ -37,9 +35,6 @@ class HueApp(HueResource):
     def __init__(self, app_name, client_name):
         self.app_name = app_name
         self.client_name = client_name
-
-    def format_url(self):
-        return super(HueApp, self).format_url().rstrip('/')
 
 
 class LightState(HueResource):
@@ -51,8 +46,8 @@ class LightState(HueResource):
         {"name": "color_mode", "field": "colormode", "readonly": True},
     ]
 
-    def format_url(self):
-        return self.parent.format_url() + "/state"
+    def relative_url(self):
+        return self.parent.relative_url() + "/state"
 
 
 class Light(HueResource):
@@ -64,8 +59,8 @@ class Light(HueResource):
         {"name": "state", "cls": LightState}
     ]
 
-    def format_url(self):
-        return super(Light, self).format_url() + "/lights"
+    def relative_url(self):
+        return "/lights/" + self.id
 
 
 class Bridge(HueResource):
