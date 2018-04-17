@@ -1,5 +1,6 @@
 import requests
 
+from .core import Light
 from .exceptions import RequestFailed
 
 
@@ -91,3 +92,13 @@ class BaseResourceManager(object):
         if key in self.APIS:
             return lambda **kwargs: self.request(**self.APIS[key])
         raise AttributeError
+
+
+class LightsManager(BaseResourceManager):
+    APIS = {
+        'get_all_lights': {
+            'relative_url': '/lights',
+            'method': 'get',
+            'parser': dict_parser(Light, key_field="id")
+        }
+    }
