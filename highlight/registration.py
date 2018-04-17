@@ -69,4 +69,6 @@ def register(host, app_name, store, timeout=30.0):
         store["username"] = watcher.username
         return watcher.username
 
+    #TODO get a connection_info object and update the username.
+
     raise RegistrationFailed()
