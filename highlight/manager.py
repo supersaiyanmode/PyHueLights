@@ -1,3 +1,5 @@
+import requests
+
 from .exceptions import RequestFailed
 
 
@@ -37,3 +39,36 @@ def update_from_object(result, obj, fields):
 
         setattr(result, obj_attr_name, value)
         make_property(result, obj_attr_name, obj_prop_name, field_info)
+
+
+class BaseResourceManager(object):
+    APIS = {}
+
+    def __init__(self, connection_info):
+        self.connection_info = connection_info
+
+    def parse_response(self, obj, **kwargs):
+        parser = kwargs.pop('parser')
+        return parser(obj)
+
+    def request(self, **kwargs):
+        return self.parse_response(self.make_request(**kwargs), **kwargs)
+
+    def make_request(self, **kwargs):
+        expected_status = kwargs.pop('expected_status', [200])
+        relative_url = kwargs.pop('relative_url')
+        method = kwargs.pop('method')
+        body = kwargs.pop('body', None)
+
+        url = "http://{}/api/{}{}".format(self.connection_info.host,
+                                          self.connection_info.username,
+                                          relative_url)
+        response = getattr(requests, method)(url, json=construct_body(body))
+        if response.status_code not in expected_status:
+            raise RequestFailed(response.status_code, response.text)
+        return response.json()
+
+    def __getattr__(self, key):
+        if key in self.APIS:
+            return lambda **kwargs: self.request(**self.APIS[key])
+        raise AttributeError

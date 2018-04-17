@@ -18,29 +18,6 @@ class HueConnectionInfo(object):
         return "Philips" in resp.text
 
 
-class BaseRequest(object):
-    def parse_response(self, method, obj):
-        return self.RESPONSE_PARSERS[method](obj)
-
-    def request(self, method, **kwargs):
-        return self.parse_response(self.make_request(method, **kwargs))
-
-
-class Get(BaseRequest):
-    def get(self, **kwargs):
-        return self.request('get', **kwargs)
-
-
-class Post(object):
-    def post(self, **kwargs):
-        return self.request('post', **kwargs)
-
-
-class Put(object):
-    def put(self, obj, **kwargs):
-        return self.request('put', **kwargs)
-
-
 class HueResource(object):
     def __init__(self, connection_info, parent=None):
         self.connection_info = connection_info
