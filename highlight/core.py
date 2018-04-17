@@ -33,6 +33,7 @@ class HueResource(object):
 class HueApp(HueResource):
     """ Represents Hue App. """
     def __init__(self, app_name, client_name):
+        super(HueApp, self).__init__()
         self.app_name = app_name
         self.client_name = client_name
 
