@@ -19,32 +19,17 @@ class HueConnectionInfo(object):
 
 
 class HueResource(object):
-    def __init__(self, connection_info, parent=None):
-        self.connection_info = connection_info
+    def __init__(self, parent=None):
         self.parent = parent
         self.dirty_flag = {}
 
-    def make_request(self, method, **kwargs):
-        expected_status = kwargs.pop('expected_status', [])
-        relative_url = kwargs.pop('relative_url', self.relative_url)
-
-        url = self.format_url(self.connection_info, relative_url)
-        response = getattr(requests, method)(url, **kwargs)
-        if expected_status and response.status_code not in expected_status:
-            raise RequestFailed(response.status_code, response.text)
-        return response.json()
 
     def format_url(self):
         """
         Use connection_info and relative_url to construct the HTTP resource
         URL.
         """
-        return "http://{}/api/{}".format(
-                self.connection_info.host, self.connection_info.username)
-
-    def update_from_object(self, obj):
-        args = (self.connection_info, self)
-        update_from_object(self, obj, self.FIELDS, self.dirty_flag, args)
+        return ""
 
 
 class HueApp(HueResource):
