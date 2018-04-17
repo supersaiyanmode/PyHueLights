@@ -24,6 +24,26 @@ def make_property(obj, attr_name, obj_prop_name, field_info, dirty):
     setattr(obj.__class__, obj_prop_name, prop)
 
 
+def update_from_object(result, obj, fields, dirty_flag, sub_res_args=()):
+    for field_info in fields:
+        sub_resource = field_info.get('cls')
+        json_item_name = field_info.get('field', field_info["name"])
+        obj_prop_name = field_info["name"]
+        obj_attr_name = "field_" + obj_prop_name
+
+        if json_item_name not in obj:
+            raise ValueError("No field in object: " + json_item_name)
+
+        if sub_resource:
+            value = sub_resource(*sub_res_args)
+        else:
+            value = obj[json_item_name]
+
+        setattr(result, obj_attr_name, value)
+        make_property(result, obj_attr_name, obj_prop_name, field_info,
+                      dirty_flag)
+
+
 class HueConnectionInfo(object):
     """ Represents the result of a Hue Bridge discovery. """
     def __init__(self, host, username=None):
@@ -41,19 +61,27 @@ class HueConnectionInfo(object):
         return True
 
 
-class Get(object):
-    def get(self, relative_url=None, **kwargs):
-        return self.make_request('get', relative_url=relative_url, **kwargs)
+class BaseRequest(object):
+    def parse_response(self, method, obj):
+        return self.RESPONSE_PARSERS[method](obj)
+
+    def request(self, method, **kwargs):
+        return self.parse_response(self.make_request(method, **kwargs))
+
+
+class Get(BaseRequest):
+    def get(self, **kwargs):
+        return self.request('get', **kwargs)
 
 
 class Post(object):
-    def post(self, obj, relative_url=None, **kwargs):
-        return self.make_request('post', relative_url=relative_url, **kwargs)
+    def post(self, **kwargs):
+        return self.request('post', **kwargs)
 
 
 class Put(object):
-    def put(self, obj, relative_url=None, **kwargs):
-        return self.make_request('put', relative_url=relative_url, **kwargs)
+    def put(self, obj, **kwargs):
+        return self.request('put', **kwargs)
 
 
 class HueResource(object):
@@ -81,23 +109,8 @@ class HueResource(object):
                 self.connection_info.host, self.connection_info.username)
 
     def update_from_object(self, obj):
-        for field_info in self.FIELDS:
-            sub_resource = field_info.get('cls')
-            json_item_name = field_info.get('field', field_info["name"])
-            obj_prop_name = field_info["name"]
-            obj_attr_name = "field_" + obj_prop_name
-
-            if json_item_name not in obj:
-                raise ValueError("No field in object: " + json_item_name)
-
-            if sub_resource:
-                value = sub_resource(self.connection_info, self)
-            else:
-                value = obj[json_item_name]
-
-            setattr(self, obj_attr_name, value)
-            make_property(self, obj_attr_name, obj_prop_name, field_info,
-                          self.dirty_flag)
+        args = (self.connection_info, self)
+        update_from_object(self, obj, self.FIELDS, self.dirty_flag, args)
 
 
 class HueApp(HueResource):
@@ -131,6 +144,9 @@ class Light(HueResource):
         {"name": "name"},
         {"name": "state", "cls": LightState}
     ]
+
+    def format_url(self):
+        return super(Light, self).format_url() + "/lights"
 
 
 class Bridge(HueResource):
