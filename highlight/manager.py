@@ -41,6 +41,25 @@ def update_from_object(result, obj, fields):
         make_property(result, obj_attr_name, obj_prop_name, field_info)
 
 
+def dict_parser(cls, key_field=None):
+    def parser(response):
+        obj = {}
+        for key, value in response.items():
+            result = cls()
+            update_from_object(result, value, result.FIELDS)
+            if key_field:
+                setattr(result, key_field, key)
+
+            obj[key] = result
+        return obj
+
+    return parser
+
+
+def construct_body(obj):
+    return None
+
+
 class BaseResourceManager(object):
     APIS = {}
 
