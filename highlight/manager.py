@@ -22,8 +22,11 @@ def make_property(obj, attr_name, obj_prop_name, field_info):
     setattr(obj.__class__, obj_prop_name, prop)
 
 
-def update_from_object(result, key, obj, fields):
-    for field_info in fields:
+def update_from_object(result, key, obj):
+    if not hasattr(result, 'FIELDS'):
+        raise ValueError("Invalid target. Doesn't have FIELDS attribute.")
+
+    for field_info in result.FIELDS:
         sub_resource = field_info.get('cls')
         json_item_name = field_info.get('field', field_info["name"])
         obj_prop_name = field_info["name"]
@@ -34,8 +37,9 @@ def update_from_object(result, key, obj, fields):
 
         if sub_resource:
             value = sub_resource(parent=result, attr_in_parent=obj_prop_name)
-            update_from_object(value, None, obj[json_item_name], value.FIELDS)
+            update_from_object(value, None, obj[json_item_name])
         elif json_item_name == "$KEY":
+            field_info["readonly"] = True
             value = key
         else:
             value = obj[json_item_name]
@@ -49,7 +53,7 @@ def dict_parser(cls):
         obj = {}
         for key, value in response.items():
             result = cls()
-            update_from_object(result, key, value, result.FIELDS)
+            update_from_object(result, key, value)
             obj[key] = result
         return obj
 
