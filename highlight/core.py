@@ -35,6 +35,13 @@ class HueResource(object):
         if self.parent:
             self.parent.set_dirty(self.attr_in_parent)
 
+    def clear_dirty(self, field=None):
+        if field and field in self.dirty_flag:
+            self.dirty_flag[field] = False
+        else:
+            for key in self.dirty_flag:
+                self.dirty_flag[key] = False
+
 
 class HueApp(HueResource):
     """ Represents Hue App. """
