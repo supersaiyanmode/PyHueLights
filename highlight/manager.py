@@ -10,7 +10,7 @@ def make_property(obj, attr_name, obj_prop_name, field_info):
 
     def setter_func(self, val):
         setattr(self, attr_name, val)
-        obj.dirty_flag[obj_prop_name] = True
+        obj.set_dirty(obj_prop_name)
 
     # No setters for a sub-resource or a readonly resource.
     if field_info.get("readonly", False) or field_info.get('cls'):
@@ -33,7 +33,7 @@ def update_from_object(result, key, obj, fields):
             raise ValueError("No field in object: " + json_item_name)
 
         if sub_resource:
-            value = sub_resource(parent=obj)
+            value = sub_resource(parent=result, attr_in_parent=obj_prop_name)
             update_from_object(value, None, obj[json_item_name], value.FIELDS)
         elif json_item_name == "$KEY":
             value = key

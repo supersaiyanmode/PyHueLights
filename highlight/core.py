@@ -19,8 +19,9 @@ class HueConnectionInfo(object):
 
 
 class HueResource(object):
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, attr_in_parent=None):
         self.parent = parent
+        self.attr_in_parent = attr_in_parent
         self.dirty_flag = {}
 
     def relative_url(self):
@@ -28,6 +29,11 @@ class HueResource(object):
         Returns relative_url to construct the HTTP resource URL.
         """
         return ""
+
+    def set_dirty(self, field):
+        self.dirty_flag[field] = True
+        if self.parent:
+            self.parent.set_dirty(self.attr_in_parent)
 
 
 class HueApp(HueResource):
