@@ -19,8 +19,9 @@ class RequestFailed(HighlightException):
     Raised for all exceptions stemming from failure in requesting info from
     the bridge.
     """
-    def __init__(self, response):
+    def __init__(self, status_code, response):
         super(RequestFailed, self).__init__("Request to bridge failed.")
+        self.unexpected_status_code = status_code
         self.response = response
 
 

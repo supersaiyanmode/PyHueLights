@@ -3,26 +3,6 @@
 
 import requests
 
-from .exceptions import RequestFailed
-
-
-def make_property(obj, attr_name, obj_prop_name, field_info, dirty):
-    def getter_func(self):
-        return getattr(self, attr_name)
-
-    def setter_func(self, val):
-        setattr(self, attr_name, val)
-        dirty[obj_prop_name] = True
-
-    # No setters for a sub-resource or a readonly resource.
-    if field_info.get("readonly", False) or field_info.get('cls'):
-        prop = property(fget=getter_func)
-    else:
-        prop = property(fget=getter_func, fset=setter_func)
-        dirty[obj_prop_name] = False
-
-    setattr(obj.__class__, obj_prop_name, prop)
-
 
 class HueConnectionInfo(object):
     """ Represents the result of a Hue Bridge discovery. """
@@ -35,79 +15,33 @@ class HueConnectionInfo(object):
         if resp.status_code != 200:
             return False
 
-        if "Philips" not in resp.text:
-            return False
-
-        return True
-
-
-class Get(object):
-    def get(self, relative_url=None, **kwargs):
-        return self.make_request('get', relative_url=relative_url, **kwargs)
-
-
-class Post(object):
-    def post(self, obj, relative_url=None, **kwargs):
-        return self.make_request('post', relative_url=relative_url, **kwargs)
-
-
-class Put(object):
-    def put(self, obj, relative_url=None, **kwargs):
-        return self.make_request('put', relative_url=relative_url, **kwargs)
+        return "Philips" in resp.text
 
 
 class HueResource(object):
-    def __init__(self, connection_info, parent=None):
-        self.connection_info = connection_info
+    def __init__(self, parent=None, attr_in_parent=None):
         self.parent = parent
+        self.attr_in_parent = attr_in_parent
         self.dirty_flag = {}
 
-    def make_request(self, method, **kwargs):
-        expected_status = kwargs.pop('expected_status', [])
-        relative_url = kwargs.pop('relative_url', self.relative_url)
-
-        url = self.format_url(self.connection_info, relative_url)
-        response = getattr(requests, method)(url, **kwargs)
-        if expected_status and response.status_code not in expected_status:
-            raise RequestFailed(response.status_code, response.text)
-        return response.json()
-
-    def format_url(self):
+    def relative_url(self):
         """
-        Use connection_info and relative_url to construct the HTTP resource
-        URL.
+        Returns relative_url to construct the HTTP resource URL.
         """
-        return "http://{}/api/{}".format(
-                self.connection_info.host, self.connection_info.username)
+        return ""
 
-    def update_from_object(self, obj):
-        for field_info in self.FIELDS:
-            sub_resource = field_info.get('cls')
-            json_item_name = field_info.get('field', field_info["name"])
-            obj_prop_name = field_info["name"]
-            obj_attr_name = "field_" + obj_prop_name
-
-            if json_item_name not in obj:
-                raise ValueError("No field in object: " + json_item_name)
-
-            if sub_resource:
-                value = sub_resource(self.connection_info, self)
-            else:
-                value = obj[json_item_name]
-
-            setattr(self, obj_attr_name, value)
-            make_property(self, obj_attr_name, obj_prop_name, field_info,
-                          self.dirty_flag)
+    def set_dirty(self, field):
+        self.dirty_flag[field] = True
+        if self.parent:
+            self.parent.set_dirty(self.attr_in_parent)
 
 
 class HueApp(HueResource):
     """ Represents Hue App. """
     def __init__(self, app_name, client_name):
+        super(HueApp, self).__init__()
         self.app_name = app_name
         self.client_name = client_name
-
-    def format_url(self):
-        return super(HueApp, self).format_url().rstrip('/')
 
 
 class LightState(HueResource):
@@ -116,21 +50,25 @@ class LightState(HueResource):
     FIELDS = [
         {"name": "on"},
         {"name": "reachable", "readonly": True},
-        {"name": "colormode", "field": "color_mode", "readonly": True},
+        {"name": "color_mode", "field": "colormode", "readonly": True},
     ]
 
-    def format_url(self):
-        return self.parent.format_url() + "/state"
+    def relative_url(self):
+        return self.parent.relative_url() + "/state"
 
 
 class Light(HueResource):
     FIELDS = [
+        {"name": "id", "field": "$KEY"},
         {"name": "type", "readonly": True},
         {"name": "model_id", "field": "modelid", "readonly": True},
         {"name": "software_version", "field": "swversion", "readonly": True},
         {"name": "name"},
         {"name": "state", "cls": LightState}
     ]
+
+    def relative_url(self):
+        return "/lights/" + self.id
 
 
 class Bridge(HueResource):

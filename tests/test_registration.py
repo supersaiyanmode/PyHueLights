@@ -1,6 +1,7 @@
 import pytest
 
 import highlight.registration
+from highlight.core import HueApp, HueConnectionInfo
 from highlight.exceptions import RegistrationFailed
 from highlight.registration import register
 
@@ -35,19 +36,19 @@ class TestRegistration(object):
 
     def test_registration_timeout(self):
         with pytest.raises(RegistrationFailed):
-            register(None, None, {}, 5)
+            register(HueConnectionInfo(""), HueApp("", ""), {}, 5)
 
     def test_bad_response(self):
         self.fake_request.responses = [FakeResponse(500, {})]
 
         with pytest.raises(RegistrationFailed):
-            register("host", "", {}, 30)
+            register(HueConnectionInfo(""), HueApp("", ""), {}, 30)
 
     def test_unexpected_response(self):
         self.fake_request.responses = [FakeResponse(200, {})] * 3
 
         with pytest.raises(RegistrationFailed):
-            register("host", "", {}, 2)
+            register(HueConnectionInfo(""), HueApp("", ""), {}, 2)
 
     def test_sucessful_registration(self):
         self.fake_request.responses = [
@@ -57,5 +58,5 @@ class TestRegistration(object):
         ]
 
         store = {}
-        assert register("host", "", store) == "abc"
+        assert register(HueConnectionInfo(""), HueApp("", ""), store) == "abc"
         assert store == {"username": "abc"}

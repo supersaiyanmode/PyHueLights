@@ -53,7 +53,7 @@ class RegistrationWatcher(object):
         self.event.wait()
 
 
-def register(host, app_name, store, timeout=30.0):
+def register(connection_info, app, store, timeout=30.0):
     """
     Looks into the store to check for previous registration. If absent, go ahead
     with new registration.
@@ -61,12 +61,14 @@ def register(host, app_name, store, timeout=30.0):
     if "username" in store:
         return store["username"]
 
-    watcher = RegistrationWatcher(host, app_name, timeout)
+    watcher = RegistrationWatcher(
+        connection_info.host, app.app_name + "#" + app.client_name, timeout)
     watcher.start()
     watcher.wait()
 
     if watcher.status == REGISTRATION_SUCCEEDED:
         store["username"] = watcher.username
+        connection_info.username = watcher.username
         return watcher.username
 
     raise RegistrationFailed()
