@@ -4,7 +4,7 @@ from .core import HueResource, Light
 from .exceptions import RequestFailed
 
 
-def make_property(obj, attr_name, obj_prop_name, field_info, value):
+def make_property(obj, attr_name, obj_prop_name, field_info):
     def getter_func(self):
         return getattr(self, attr_name)
 
@@ -54,7 +54,7 @@ def update_from_object(result, key, obj):
 
         setattr(result, obj_prop_name + "_orig", value)
         setattr(result, obj_attr_name, value)
-        make_property(result, obj_attr_name, obj_prop_name, field_info, value)
+        make_property(result, obj_attr_name, obj_prop_name, field_info)
 
         prop_to_json_key_map[obj_prop_name] = json_item_name
     result.property_to_json_key_map = prop_to_json_key_map
