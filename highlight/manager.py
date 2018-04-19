@@ -5,9 +5,6 @@ from .exceptions import RequestFailed
 
 
 def make_property(obj, attr_name, obj_prop_name, field_info, value):
-    def original_getter_func(self):
-        return value  # Original value from the time when obj was created.
-
     def getter_func(self):
         return getattr(self, attr_name)
 
@@ -27,10 +24,6 @@ def make_property(obj, attr_name, obj_prop_name, field_info, value):
         prop = property(fget=getter_func, fset=setter_func)
         obj.dirty_flag[obj_prop_name] = False
         setattr(obj.__class__, obj_prop_name, prop)
-
-        # Ability to access original values.
-        prop = property(fget=original_getter_func)
-        setattr(obj.__class__, obj_prop_name + "_orig", prop)
 
 
 def update_from_object(result, key, obj):
@@ -55,6 +48,7 @@ def update_from_object(result, key, obj):
         else:
             value = obj[json_item_name]
 
+        setattr(result, obj_prop_name + "_orig", value)
         setattr(result, obj_attr_name, value)
         make_property(result, obj_attr_name, obj_prop_name, field_info, value)
 
