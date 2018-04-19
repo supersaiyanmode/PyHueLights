@@ -2,7 +2,7 @@ import requests_mock
 import pytest
 
 from highlight.core import HueResource, HueConnectionInfo
-from highlight.manager import update_from_object
+from highlight.manager import update_from_object, construct_body
 
 
 @pytest.fixture()
@@ -168,3 +168,29 @@ class TestUpdateFromObject(object):
 
         assert resource.field2 == "hello"
         assert resource.field3.sub2.test == 1
+
+    def test_construct_body(self):
+        obj = {
+            "field1": "blah",
+            "f2": "hello",
+            "field3": {
+                "sub": "subval",
+                "sub2": {"test": 1}
+            }
+        }
+
+        resource = self.CustomResource()
+        update_from_object(resource, "id", obj)
+
+        resource.field2 = "new_value"
+        resource.field3.sub2.test = 5
+
+        res = construct_body(resource)
+        expected = {
+            "f2": "new_value",
+            "field3": {
+                "sub2": {"test": 5}
+            }
+        }
+
+        assert res == expected
