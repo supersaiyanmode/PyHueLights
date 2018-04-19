@@ -169,6 +169,33 @@ class TestUpdateFromObject(object):
         assert resource.field2 == "hello"
         assert resource.field3.sub2.test == 1
 
+
+    def test_update_state(self):
+        obj = {
+            "field1": "blah",
+            "f2": "hello",
+            "field3": {
+                "sub": "subval",
+                "sub2": {"test": 1}
+            }
+        }
+
+        resource = self.CustomResource()
+        update_from_object(resource, "id", obj)
+
+        resource.field2 = "world"
+        resource.field3.sub2.test = 2
+
+        resource.update_state()
+
+        assert resource.dirty_flag == {"field2": False, "field3": False}
+        assert resource.field3.sub2.dirty_flag == {"test": False}
+
+        #resource.clear_dirty()
+
+        assert resource.field2 == "world"
+        assert resource.field3.sub2.test == 2
+
     def test_construct_body(self):
         obj = {
             "field1": "blah",
@@ -194,3 +221,4 @@ class TestUpdateFromObject(object):
         }
 
         assert res == expected
+

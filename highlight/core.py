@@ -47,6 +47,18 @@ class HueResource(object):
             for key in self.dirty_flag:
                 self.clear_dirty(field=key)
 
+    def update_state(self, field=None):
+        if field and field in self.dirty_flag:
+            value = getattr(self, field)
+            if isinstance(value, HueResource):
+                value.update_state()
+            else:
+                setattr(self, field + "_orig", value)
+            self.dirty_flag[field] = False
+        else:
+            for key in self.dirty_flag:
+                self.update_state(field=key)
+
 
 class HueApp(HueResource):
     """ Represents Hue App. """
