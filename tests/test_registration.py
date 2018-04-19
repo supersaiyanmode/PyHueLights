@@ -32,7 +32,8 @@ class TestRegistration(object):
         highlight.registration.requests = self.backup_requests
 
     def test_username_in_store(self):
-        assert register(None, None, {"username": "test"}) == "test"
+        store = {"username": "test"}
+        assert register(HueConnectionInfo(""), None, store) == "test"
 
     def test_registration_timeout(self):
         with pytest.raises(RegistrationFailed):
