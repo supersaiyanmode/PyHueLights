@@ -169,7 +169,6 @@ class TestUpdateFromObject(object):
         assert resource.field2 == "hello"
         assert resource.field3.sub2.test == 1
 
-
     def test_update_state(self):
         obj = {
             "field1": "blah",
