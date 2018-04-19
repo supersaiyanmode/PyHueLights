@@ -102,6 +102,10 @@ class BaseResourceManager(object):
             raise RequestFailed(response.status_code, response.text)
         return response.json()
 
+    def make_resource_update_request(self, obj, method='PUT', **kwargs):
+        return self.make_request(method=method, relative_url=obj.relative_url(),
+                                 **kwargs)
+
     def __getattr__(self, key):
         if key in self.APIS:
             return lambda **kwargs: self.request(**self.APIS[key])
@@ -116,3 +120,11 @@ class LightsManager(BaseResourceManager):
             'parser': dict_parser(Light)
         }
     }
+
+    def run_effect(self, light, effect):
+        """
+        Runs the change represented by effect on the given light instance.
+        """
+        light.clear_dirty()
+        for state in effect.update_state(light):
+            self.make_resource_update_request(state)
