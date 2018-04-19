@@ -35,6 +35,30 @@ class HueResource(object):
         if self.parent:
             self.parent.set_dirty(self.attr_in_parent)
 
+    def clear_dirty(self, field=None):
+        if field and field in self.dirty_flag:
+            value = getattr(self, field)
+            if isinstance(value, HueResource):
+                value.clear_dirty(field=field)
+            else:
+                setattr(self, "field_" + field, getattr(self, field + "_orig"))
+            self.dirty_flag[field] = False
+        else:
+            for key in self.dirty_flag:
+                self.clear_dirty(field=key)
+
+    def update_state(self, field=None):
+        if field and field in self.dirty_flag:
+            value = getattr(self, field)
+            if isinstance(value, HueResource):
+                value.update_state()
+            else:
+                setattr(self, field + "_orig", value)
+            self.dirty_flag[field] = False
+        else:
+            for key in self.dirty_flag:
+                self.update_state(field=key)
+
 
 class HueApp(HueResource):
     """ Represents Hue App. """
@@ -51,6 +75,7 @@ class LightState(HueResource):
         {"name": "on"},
         {"name": "reachable", "readonly": True},
         {"name": "color_mode", "field": "colormode", "readonly": True},
+        {"name": "effect", "values": ["colorloop", "none"]},
     ]
 
     def relative_url(self):

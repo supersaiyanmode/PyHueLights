@@ -59,6 +59,7 @@ def register(connection_info, app, store, timeout=30.0):
     with new registration.
     """
     if "username" in store:
+        connection_info.username = store["username"]
         return store["username"]
 
     watcher = RegistrationWatcher(

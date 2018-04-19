@@ -1,3 +1,5 @@
+import time
+
 
 def linear_transition(start, end, steps):
     if steps < 1:
@@ -22,3 +24,23 @@ def quadratic_transition(start, end, steps, a=1):
     cur = start
     for _ in range(steps):
         pass
+
+
+class LightEffect(object):
+    def update_state(self, light):
+        raise NotImplementedError
+
+
+class ColorLoopEffect(LightEffect):
+    def __init__(self, transition_time=3):
+        self.transition_time = transition_time
+
+    def update_state(self, light):
+        start_time = time.time()
+        light.state.effect = "colorloop"
+        yield light.state
+
+        time.sleep(self.transition_time - (time.time() - start_time))
+
+        light.state.effect = "none"
+        yield light.state

@@ -2,7 +2,7 @@ import requests_mock
 import pytest
 
 from highlight.core import HueResource, HueConnectionInfo
-from highlight.manager import update_from_object
+from highlight.manager import update_from_object, construct_body
 
 
 @pytest.fixture()
@@ -137,3 +137,87 @@ class TestUpdateFromObject(object):
         expected_url = "/parent/id/sub"
         assert resource.field3.relative_url() == expected_url
         assert resource.field3.sub2.relative_url() == expected_url + "/sub"
+
+    def test_reset_dirty(self):
+        obj = {
+            "field1": "blah",
+            "f2": "hello",
+            "field3": {
+                "sub": "subval",
+                "sub2": {"test": 1}
+            }
+        }
+
+        resource = self.CustomResource()
+        update_from_object(resource, "id", obj)
+
+        assert resource.dirty_flag == {"field2": False, "field3": False}
+
+        resource.field2 = "world"
+        resource.field3.sub2.test = 2
+
+        assert resource.dirty_flag == {"field2": True, "field3": True}
+        assert resource.field3.dirty_flag == {"sub2": True}
+        assert resource.field3.sub2.dirty_flag == {"test": True}
+
+        resource.clear_dirty()
+
+        assert resource.dirty_flag == {"field2": False, "field3": False}
+        assert resource.field3.dirty_flag == {"sub2": False}
+        assert resource.field3.sub2.dirty_flag == {"test": False}
+
+        assert resource.field2 == "hello"
+        assert resource.field3.sub2.test == 1
+
+    def test_update_state(self):
+        obj = {
+            "field1": "blah",
+            "f2": "hello",
+            "field3": {
+                "sub": "subval",
+                "sub2": {"test": 1}
+            }
+        }
+
+        resource = self.CustomResource()
+        update_from_object(resource, "id", obj)
+
+        resource.field2 = "world"
+        resource.field3.sub2.test = 2
+
+        resource.update_state()
+
+        assert resource.dirty_flag == {"field2": False, "field3": False}
+        assert resource.field3.sub2.dirty_flag == {"test": False}
+
+        resource.clear_dirty()
+
+        assert resource.field2 == "world"
+        assert resource.field3.sub2.test == 2
+
+    def test_construct_body(self):
+        obj = {
+            "field1": "blah",
+            "f2": "hello",
+            "field3": {
+                "sub": "subval",
+                "sub2": {"test": 1}
+            }
+        }
+
+        resource = self.CustomResource()
+        update_from_object(resource, "id", obj)
+
+        resource.field2 = "new_value"
+        resource.field3.sub2.test = 5
+
+        res = construct_body(resource)
+        expected = {
+            "f2": "new_value",
+            "field3": {
+                "sub2": {"test": 5}
+            }
+        }
+
+        assert res == expected
+
