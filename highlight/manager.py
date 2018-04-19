@@ -9,6 +9,9 @@ def make_property(obj, attr_name, obj_prop_name, field_info, value):
         return getattr(self, attr_name)
 
     def setter_func(self, val):
+        allowed_values = field_info.get("values")
+        if allowed_values and val not in allowed_values:
+            raise ValueError("Not a valid value.")
         setattr(self, attr_name, val)
         obj.set_dirty(obj_prop_name)
 
