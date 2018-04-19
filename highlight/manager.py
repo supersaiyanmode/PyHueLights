@@ -113,7 +113,7 @@ class BaseResourceManager(object):
             raise RequestFailed(response.status_code, response.text)
         return response.json()
 
-    def make_resource_update_request(self, obj, method='PUT', **kwargs):
+    def make_resource_update_request(self, obj, method='put', **kwargs):
         return self.make_request(method=method, relative_url=obj.relative_url(),
                                  body=obj, **kwargs)
 
