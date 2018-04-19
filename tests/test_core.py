@@ -191,7 +191,7 @@ class TestUpdateFromObject(object):
         assert resource.dirty_flag == {"field2": False, "field3": False}
         assert resource.field3.sub2.dirty_flag == {"test": False}
 
-        #resource.clear_dirty()
+        resource.clear_dirty()
 
         assert resource.field2 == "world"
         assert resource.field3.sub2.test == 2
