@@ -73,6 +73,9 @@ def dict_parser(cls):
 
 
 def construct_body(obj):
+    if obj is None:
+        return None
+
     result = {}
     for field, value in obj.dirty_flag.items():
         if not value:
@@ -108,14 +111,15 @@ class BaseResourceManager(object):
         url = "http://{}/api/{}{}".format(self.connection_info.host,
                                           self.connection_info.username,
                                           relative_url)
-        response = getattr(requests, method)(url, json=construct_body(body))
+        response = getattr(requests, method)(url, json=body)
+
         if response.status_code not in expected_status:
             raise RequestFailed(response.status_code, response.text)
         return response.json()
 
     def make_resource_update_request(self, obj, method='put', **kwargs):
         return self.make_request(method=method, relative_url=obj.relative_url(),
-                                 body=obj, **kwargs)
+                                 body=construct_body(obj), **kwargs)
 
     def __getattr__(self, key):
         if key in self.APIS:
