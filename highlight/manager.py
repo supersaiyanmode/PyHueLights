@@ -13,7 +13,7 @@ def make_property(obj, attr_name, obj_prop_name, field_info, value):
         if allowed_values and val not in allowed_values:
             raise ValueError("Not a valid value.")
         setattr(self, attr_name, val)
-        obj.set_dirty(obj_prop_name)
+        self.set_dirty(obj_prop_name)
 
     # No setters for a sub-resource or a readonly resource.
     if field_info.get("readonly", False):
