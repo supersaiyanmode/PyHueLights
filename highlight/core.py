@@ -37,10 +37,15 @@ class HueResource(object):
 
     def clear_dirty(self, field=None):
         if field and field in self.dirty_flag:
+            value = getattr(self, field)
+            if isinstance(value, HueResource):
+                value.clear_dirty(field=field)
+            else:
+                setattr(self, field, getattr(self, field + "_orig"))
             self.dirty_flag[field] = False
         else:
             for key in self.dirty_flag:
-                self.dirty_flag[key] = False
+                self.clear_dirty(field=key)
 
 
 class HueApp(HueResource):
