@@ -75,6 +75,7 @@ class LightState(HueResource):
         {"name": "on"},
         {"name": "reachable", "readonly": True},
         {"name": "color_mode", "field": "colormode", "readonly": True},
+        {"name": "effect", "values": ["colorloop", "none"]},
     ]
 
     def relative_url(self):
