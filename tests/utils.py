@@ -30,6 +30,10 @@ class CustomResource(HueResource):
         {"name": "field3", "cls": SubResource},
     ]
 
+    REQUEST_FIELDS = [
+        {"name": "req", "field": "request"},
+    ]
+
     def relative_url(self):
         return "/parent/" + self.id
 

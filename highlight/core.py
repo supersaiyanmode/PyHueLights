@@ -88,6 +88,8 @@ def init_object(obj):
         prop = property(fget=getter, fset=setter)
         setattr(obj.__class__, prop_name, prop)
 
+        setattr(obj, prop_name + "_orig", None)
+
         obj.property_to_json_key_map[prop_name] = json_item_name
 
 

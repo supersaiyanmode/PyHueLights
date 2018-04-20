@@ -103,3 +103,23 @@ class TestUpdateFromObject(CustomResourceTestBase):
 
         assert resource.field2 == "world"
         assert resource.field3.sub2.test == 2
+
+
+class TestInitObject(CustomResourceTestBase):
+    def test_init_object(self):
+        resource = self.get_resource(self.obj)
+
+        assert resource.req is None
+
+        resource.req = "test"
+
+        assert resource.req == "test"
+        assert resource.dirty_flag["req"] == True
+
+    def test_reset_dirty(self):
+        resource = self.get_resource(self.obj)
+        resource.req = "test"
+
+        resource.clear_dirty()
+
+        assert resource.req is None
