@@ -27,14 +27,14 @@ def quadratic_transition(start, end, steps, a=1):
 
 
 class LightEffect(object):
+    def __init__(self, transition_time=3):
+        self.transition_time = transition_time
+
     def update_state(self, light):
         raise NotImplementedError
 
 
 class ColorLoopEffect(LightEffect):
-    def __init__(self, transition_time=3):
-        self.transition_time = transition_time
-
     def update_state(self, light):
         start_time = time.time()
         light.state.effect = "colorloop"
@@ -43,4 +43,21 @@ class ColorLoopEffect(LightEffect):
         time.sleep(self.transition_time - (time.time() - start_time))
 
         light.state.effect = "none"
+        yield light.state
+
+
+class SwitchOffEffect(LightEffect):
+    def update_state(self, light):
+        if self.transition_time:
+            light.state.transition_time = self.transition_time
+
+        light.state.on = False
+        yield light.state
+
+class SwitchOnEffect(LightEffect):
+    def update_state(self, light):
+        if self.transition_time:
+            light.state.transition_time = self.transition_time
+
+        light.state.on = True
         yield light.state
