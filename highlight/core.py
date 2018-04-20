@@ -4,14 +4,18 @@
 import requests
 
 
+def validate_setter_values(field_info, val):
+        allowed_values = field_info.get("values")
+        if allowed_values and val not in allowed_values:
+            raise ValueError("Not a valid value.")
+
+
 def make_property(obj, attr_name, obj_prop_name, field_info):
     def getter_func(self):
         return getattr(self, attr_name)
 
     def setter_func(self, val):
-        allowed_values = field_info.get("values")
-        if allowed_values and val not in allowed_values:
-            raise ValueError("Not a valid value.")
+        validate_setter_values(field_info, val)
         setattr(self, attr_name, val)
         self.set_dirty(obj_prop_name)
 
