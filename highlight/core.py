@@ -4,6 +4,62 @@
 import requests
 
 
+def make_property(obj, attr_name, obj_prop_name, field_info):
+    def getter_func(self):
+        return getattr(self, attr_name)
+
+    def setter_func(self, val):
+        allowed_values = field_info.get("values")
+        if allowed_values and val not in allowed_values:
+            raise ValueError("Not a valid value.")
+        setattr(self, attr_name, val)
+        self.set_dirty(obj_prop_name)
+
+    # No setters for a sub-resource or a readonly resource.
+    if field_info.get("readonly", False):
+        prop = property(fget=getter_func)
+        setattr(obj.__class__, obj_prop_name, prop)
+    elif field_info.get('cls'):
+        prop = property(fget=getter_func)
+        obj.dirty_flag[obj_prop_name] = False
+        setattr(obj.__class__, obj_prop_name, prop)
+    else:
+        prop = property(fget=getter_func, fset=setter_func)
+        obj.dirty_flag[obj_prop_name] = False
+        setattr(obj.__class__, obj_prop_name, prop)
+
+
+def update_from_object(result, key, obj):
+    if not hasattr(result, 'FIELDS'):
+        raise ValueError("Invalid target. Doesn't have FIELDS attribute.")
+
+    prop_to_json_key_map = {}
+    for field_info in result.FIELDS:
+        sub_resource = field_info.get('cls')
+        json_item_name = field_info.get('field', field_info["name"])
+        obj_prop_name = field_info["name"]
+        obj_attr_name = "field_" + obj_prop_name
+
+        if json_item_name != "$KEY" and json_item_name not in obj:
+            raise ValueError("No field in object: " + json_item_name)
+
+        if sub_resource:
+            value = sub_resource(parent=result, attr_in_parent=obj_prop_name)
+            update_from_object(value, None, obj[json_item_name])
+        elif json_item_name == "$KEY":
+            field_info["readonly"] = True
+            value = key
+        else:
+            value = obj[json_item_name]
+
+        setattr(result, obj_prop_name + "_orig", value)
+        setattr(result, obj_attr_name, value)
+        make_property(result, obj_attr_name, obj_prop_name, field_info)
+
+        prop_to_json_key_map[obj_prop_name] = json_item_name
+    result.property_to_json_key_map = prop_to_json_key_map
+
+
 class HueConnectionInfo(object):
     """ Represents the result of a Hue Bridge discovery. """
     def __init__(self, host, username=None):
