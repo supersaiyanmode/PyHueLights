@@ -150,10 +150,3 @@ class Light(HueResource):
 
     def relative_url(self):
         return "/lights/" + self.id
-
-
-class Bridge(HueResource):
-    """ Represents a Philips Hue bridge."""
-
-    def __init__(self, host):
-        self.host = host
