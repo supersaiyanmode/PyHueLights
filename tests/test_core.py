@@ -1,4 +1,3 @@
-import requests_mock
 import pytest
 
 from highlight.core import HueResource, HueConnectionInfo
