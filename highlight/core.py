@@ -64,6 +64,33 @@ def update_from_object(result, key, obj):
     result.property_to_json_key_map = prop_to_json_key_map
 
 
+def init_object(obj):
+    if not hasattr(obj, 'REQUEST_FIELDS'):
+        return
+
+    def make_property(field_info, prop_name, attr_name):
+        def getter(self):
+            return getattr(self, attr_name, None)
+
+        def setter(self, val):
+            validate_setter_values(field_info, val)
+            setattr(self, attr_name, val)
+            self.set_dirty(prop_name)
+
+        return getter, setter
+
+    for field_info in obj.REQUEST_FIELDS:
+        prop_name = field_info["name"]
+        json_item_name = field_info.get("field", prop_name)
+
+        getter, setter = make_property(field_info, prop_name,
+                                       "field_" + prop_name)
+        prop = property(fget=getter, fset=setter)
+        setattr(obj.__class__, prop_name, prop)
+
+        obj.property_to_json_key_map[prop_name] = json_item_name
+
+
 class HueConnectionInfo(object):
     """ Represents the result of a Hue Bridge discovery. """
     def __init__(self, host, username=None):
@@ -83,6 +110,8 @@ class HueResource(object):
         self.parent = parent
         self.attr_in_parent = attr_in_parent
         self.dirty_flag = {}
+        self.property_to_json_key_map = {}
+        init_object(self)
 
     def relative_url(self):
         """
@@ -136,6 +165,10 @@ class LightState(HueResource):
         {"name": "reachable", "readonly": True},
         {"name": "color_mode", "field": "colormode", "readonly": True},
         {"name": "effect", "values": ["colorloop", "none"]},
+    ]
+
+    REQUEST_FIELDS = [
+        {"name": "transition_time", "field": "transitiontime"},
     ]
 
     def relative_url(self):
