@@ -5,12 +5,6 @@ from highlight.core import HueResource, HueConnectionInfo
 from highlight.manager import update_from_object, construct_body
 
 
-@pytest.fixture()
-def mock_request():
-    with requests_mock.Mocker() as mock:
-        yield mock
-
-
 class TestUpdateFromObject(object):
     class SubSubResource(HueResource):
         FIELDS = [
