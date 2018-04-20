@@ -115,6 +115,7 @@ class TestInitObject(CustomResourceTestBase):
 
         assert resource.req == "test"
         assert resource.dirty_flag["req"] == True
+        assert resource.property_to_json_key_map["req"] == "request"
 
     def test_reset_dirty(self):
         resource = self.get_resource(self.obj)

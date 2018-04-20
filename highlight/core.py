@@ -37,7 +37,6 @@ def update_from_object(result, key, obj):
     if not hasattr(result, 'FIELDS'):
         raise ValueError("Invalid target. Doesn't have FIELDS attribute.")
 
-    prop_to_json_key_map = {}
     for field_info in result.FIELDS:
         sub_resource = field_info.get('cls')
         json_item_name = field_info.get('field', field_info["name"])
@@ -60,8 +59,7 @@ def update_from_object(result, key, obj):
         setattr(result, obj_attr_name, value)
         make_property(result, obj_attr_name, obj_prop_name, field_info)
 
-        prop_to_json_key_map[obj_prop_name] = json_item_name
-    result.property_to_json_key_map = prop_to_json_key_map
+        result.property_to_json_key_map[obj_prop_name] = json_item_name
 
 
 def init_object(obj):
