@@ -1,10 +1,15 @@
-from highlight.manager import construct_body
+from highlight.manager import construct_body, dict_parser
 
-from utils import CustomResourceTestBase
+from utils import CustomResourceTestBase, CustomResource
 
 
 class TestDictParser(CustomResourceTestBase):
-    pass
+    def test_parse(self):
+        parser = dict_parser(CustomResource)
+        res = parser({"1": self.obj})
+        assert isinstance(res["1"], CustomResource)
+        assert res["1"].id == "1"
+        assert res["1"].field1 == "blah"
 
 
 class TestConstructBody(CustomResourceTestBase):
