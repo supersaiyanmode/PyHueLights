@@ -10,6 +10,7 @@ class FakeResponse(object):
     def __init__(self, status_code, content):
         self.status_code = status_code
         self.json = lambda : content
+        self.text = content
 
 
 class FakeRequest(object):
@@ -94,6 +95,15 @@ class CustomResourceTestBase(object):
 
 
 class RequestsTestsBase(object):
+    DEFAULT_OBJ = {
+        "field1": "blah",
+        "f2": "hello",
+        "field3": {
+            "sub": "subval",
+            "sub2": {"test": 1}
+        }
+    }
+
     def setup_method(self):
         self.fake_request = FakeRequest([])
         self.backup_requests = requests.get, requests.put, requests.post
