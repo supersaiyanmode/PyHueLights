@@ -190,3 +190,37 @@ class Light(HueResource):
 
     def relative_url(self):
         return "/lights/" + self.id
+
+
+class GroupState(HueResource):
+    """ Represents the state of the lights in group. """
+
+    FIELDS = [
+        {"name": "on"},
+        {"name": "reachable", "readonly": True, "optional": True},
+        {"name": "color_mode", "field": "colormode", "readonly": True},
+        {"name": "effect", "values": ["colorloop", "none"]},
+    ]
+
+    REQUEST_FIELDS = [
+        {"name": "transition_time", "field": "transitiontime"},
+    ]
+
+    def relative_url(self):
+        return self.parent.relative_url() + "/action"
+
+
+class Group(HueResource):
+    FIELDS = [
+        {"name": "id", "field": "$KEY"},
+        {"name": "lights", "optional": True},
+        {"name": "name"},
+        {"name": "type"},
+        {"name": "group_class", "field": "class", "optional": True},
+        {"name": "state", "field": "action", "cls": GroupState},
+        {"name": "model_id", "field": "modelid", "readonly": True,
+         "optional": True},
+    ]
+
+    def relative_url(self):
+        return "/groups/" + self.id

@@ -1,7 +1,7 @@
 import requests
 
 from .core import update_from_object
-from .core import HueResource, Light
+from .core import HueResource, Light, Group
 from .exceptions import RequestFailed
 
 
@@ -76,4 +76,17 @@ class LightsManager(BaseResourceManager):
         """
         light.clear_dirty()
         for state in effect.update_state(light):
+            self.make_resource_update_request(state)
+
+
+class GroupsManager(BaseResourceManager):
+    def get_all_groups(self):
+        """ Retrieves all groups on the bridge."""
+        obj = self.make_request(relative_url='/groups', method='get')
+        return self.parse_response(obj, parser=dict_parser(Group))
+
+    def run_effect(self, group, effect):
+        """ Runs the change on the entire group. """
+        group.clear_dirty()
+        for state in effect.update_state(group):
             self.make_resource_update_request(state)
