@@ -43,7 +43,8 @@ def update_from_object(result, key, obj):
         obj_prop_name = field_info["name"]
         obj_attr_name = "field_" + obj_prop_name
 
-        if json_item_name != "$KEY" and json_item_name not in obj:
+        if json_item_name != "$KEY" and json_item_name not in obj and \
+                not field_info.get("optional"):
             raise ValueError("No field in object: " + json_item_name)
 
         if sub_resource:
@@ -52,6 +53,8 @@ def update_from_object(result, key, obj):
         elif json_item_name == "$KEY":
             field_info["readonly"] = True
             value = key
+        elif field_info.get("optional"):
+            value = obj.get(json_item_name)
         else:
             value = obj[json_item_name]
 
