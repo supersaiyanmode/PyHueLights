@@ -44,9 +44,6 @@ class BaseResourceManager(object):
         parser = kwargs.pop('parser')
         return parser(obj)
 
-    def request(self, **kwargs):
-        return self.parse_response(self.make_request(**kwargs), **kwargs)
-
     def make_request(self, **kwargs):
         expected_status = kwargs.pop('expected_status', [200])
         relative_url = kwargs.pop('relative_url')
@@ -66,20 +63,12 @@ class BaseResourceManager(object):
         return self.make_request(method=method, relative_url=obj.relative_url(),
                                  body=construct_body(obj), **kwargs)
 
-    def __getattr__(self, key):
-        if key in self.APIS:
-            return lambda **kwargs: self.request(**self.APIS[key])
-        raise AttributeError
-
 
 class LightsManager(BaseResourceManager):
-    APIS = {
-        'get_all_lights': {
-            'relative_url': '/lights',
-            'method': 'get',
-            'parser': dict_parser(Light)
-        }
-    }
+    def get_all_lights(self):
+        """ Retrieves all lights from the bridge, and returns a dict."""
+        obj = self.make_request(relative_url="/lights", method="get")
+        return self.parse_response(obj, parser=dict_parser(Light))
 
     def run_effect(self, light, effect):
         """

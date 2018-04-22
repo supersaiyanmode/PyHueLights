@@ -63,13 +63,9 @@ class CustomResource(HueResource):
 
 
 class CustomResourceManager(BaseResourceManager):
-    APIS = {
-        "get": {
-            "relative_url": "/res",
-            "method": "get",
-            "parser": dict_parser(CustomResource)
-        }
-    }
+    def get(self):
+        obj = self.make_request(relative_url="/res", method="get")
+        return self.parse_response(obj, parser=dict_parser(CustomResource))
 
     def put(self, resource):
         return self.make_resource_update_request(resource)
