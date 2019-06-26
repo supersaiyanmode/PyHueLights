@@ -1,8 +1,8 @@
 import pytest
 
-from highlight.core import HueConnectionInfo
-from highlight.exceptions import RequestFailed
-from highlight.manager import construct_body, dict_parser
+from pyhuelights.core import HueConnectionInfo
+from pyhuelights.exceptions import RequestFailed
+from pyhuelights.manager import construct_body, dict_parser
 
 from utils import CustomResourceTestBase, CustomResource, RequestsTestsBase
 from utils import CustomResourceManager, FakeResponse

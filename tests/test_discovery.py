@@ -2,9 +2,9 @@
 import pytest
 import requests_mock
 
-from highlight.discovery import NUPNPDiscovery, StaticHostDiscovery
-from highlight.discovery import DefaultDiscovery
-from highlight.exceptions import DiscoveryFailed
+from pyhuelights.discovery import NUPNPDiscovery, StaticHostDiscovery
+from pyhuelights.discovery import DefaultDiscovery
+from pyhuelights.exceptions import DiscoveryFailed
 
 
 @pytest.fixture()

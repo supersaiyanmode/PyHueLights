@@ -11,7 +11,7 @@ before_script:
   - export PYTHONPATH=$PYTHONPATH:$(pwd)
 
 script:
-  - coverage run --source highlight -m py.test
+  - coverage run --source pyhuelights -m py.test
 
 after_success:
   - coveralls

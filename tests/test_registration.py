@@ -1,9 +1,8 @@
 import pytest
 
-import highlight.registration
-from highlight.core import HueApp, HueConnectionInfo
-from highlight.exceptions import RegistrationFailed
-from highlight.registration import register
+from pyhuelights.core import HueApp, HueConnectionInfo
+from pyhuelights.exceptions import RegistrationFailed
+from pyhuelights.registration import register
 
 from utils import RequestsTestsBase, FakeResponse
 

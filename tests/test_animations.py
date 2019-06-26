@@ -1,6 +1,6 @@
 import pytest
 
-from highlight.animations import linear_transition
+from pyhuelights.animations import linear_transition
 
 
 class TestLinearTransition(object):

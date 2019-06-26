@@ -2,8 +2,8 @@ from copy import deepcopy
 
 import requests
 
-from highlight.core import HueResource, update_from_object
-from highlight.manager import BaseResourceManager, dict_parser
+from pyhuelights.core import HueResource, update_from_object
+from pyhuelights.manager import BaseResourceManager, dict_parser
 
 
 class FakeResponse(object):

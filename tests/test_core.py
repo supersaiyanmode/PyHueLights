@@ -1,6 +1,6 @@
 import pytest
 
-from highlight.manager import update_from_object
+from pyhuelights.manager import update_from_object
 
 from utils import CustomResourceTestBase, SubResource, SubSubResource
 
