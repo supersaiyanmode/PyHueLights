@@ -5,12 +5,12 @@ except ImportError:
 
 
 setup(
-    name='highlight',
+    name='pyhuelights',
     version='0.8.0',
     author='Srivatsan Iyer',
     author_email='supersaiyanmode.rox@gmail.com',
     packages=[
-        'highlight',
+        'pyhuelights',
     ],
     license='MIT',
     description='Library to remote control Philips Hue Lights',
