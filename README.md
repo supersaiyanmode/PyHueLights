@@ -1,6 +1,6 @@
 #### This README is a work in progress.
 
-# Highlight [![Build Status](https://travis-ci.org/supersaiyanmode/Highlight.svg?branch=master)](https://travis-ci.org/supersaiyanmode/Highlight)[![Coverage Status](https://coveralls.io/repos/github/supersaiyanmode/Highlight/badge.svg)](https://coveralls.io/github/supersaiyanmode/Highlight)
+# Highlight [![Build Status](https://travis-ci.org/supersaiyanmode/PyHueLights.svg?branch=master)](https://travis-ci.org/supersaiyanmode/PyHueLights)[![Coverage Status](https://coveralls.io/repos/github/supersaiyanmode/PyHueLights/badge.svg)](https://coveralls.io/github/supersaiyanmode/PyHueLights)
 (Yet another) Philips Hue SDK (Python).
 
 
