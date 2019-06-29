@@ -94,20 +94,6 @@ def init_object(obj):
         obj.property_to_json_key_map[prop_name] = json_item_name
 
 
-class HueConnectionInfo(object):
-    """ Represents the result of a Hue Bridge discovery. """
-    def __init__(self, host, username=None):
-        self.host = host
-        self.username = username
-
-    def validate(self):
-        resp = requests.get("http://{}/description.xml".format(self.host))
-        if resp.status_code != 200:
-            return False
-
-        return "Philips" in resp.text
-
-
 class HueResource(object):
     def __init__(self, parent=None, attr_in_parent=None):
         self.parent = parent

@@ -5,8 +5,20 @@ Hue bridge on the current network.
 
 import requests
 
-from .core import HueConnectionInfo
 from .exceptions import DiscoveryFailed
+
+
+class HueRawConnectionInfo(object):
+    """ Represents the result of a Hue Bridge discovery. """
+    def __init__(self, host):
+        self.host = host
+
+    def validate(self):
+        resp = requests.get("http://{}/description.xml".format(self.host))
+        if resp.status_code != 200:
+            return False
+
+        return "Philips" in resp.text
 
 
 class BaseDiscovery(object):
