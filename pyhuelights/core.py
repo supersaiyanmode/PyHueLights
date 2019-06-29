@@ -5,9 +5,9 @@ import requests
 
 
 def validate_setter_values(field_info, val):
-        allowed_values = field_info.get("values")
-        if allowed_values and val not in allowed_values:
-            raise ValueError("Not a valid value.")
+    allowed_values = field_info.get("values")
+    if allowed_values and val not in allowed_values:
+        raise ValueError("Not a valid value.")
 
 
 def make_property(obj, attr_name, obj_prop_name, field_info):
