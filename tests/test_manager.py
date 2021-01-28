@@ -1,6 +1,6 @@
 import pytest
 
-from pyhuelights.core import HueConnectionInfo
+from pyhuelights.registration import AuthenticatedHueConnection
 from pyhuelights.exceptions import RequestFailed
 from pyhuelights.manager import construct_body, dict_parser
 
@@ -38,7 +38,7 @@ class TestConstructBody(CustomResourceTestBase):
 
 class TestBaseResourceManager(RequestsTestsBase):
     def test_invalid_api(self):
-        conn = HueConnectionInfo("")
+        conn = AuthenticatedHueConnection("", "")
         rm = CustomResourceManager(conn)
 
         with pytest.raises(AttributeError):
@@ -49,7 +49,7 @@ class TestBaseResourceManager(RequestsTestsBase):
         self.fake_request.responses = [
             FakeResponse(200, mock_response)
         ]
-        conn = HueConnectionInfo("host", "user")
+        conn = AuthenticatedHueConnection("host", "user")
         rm = CustomResourceManager(conn)
 
         resp = rm.get()
@@ -64,7 +64,7 @@ class TestBaseResourceManager(RequestsTestsBase):
         self.fake_request.responses = [
             FakeResponse(500, {})
         ]
-        conn = HueConnectionInfo("host", "user")
+        conn = AuthenticatedHueConnection("host", "user")
         rm = CustomResourceManager(conn)
 
         with pytest.raises(RequestFailed):
@@ -76,7 +76,7 @@ class TestBaseResourceManager(RequestsTestsBase):
             FakeResponse(200, mock_response),
             FakeResponse(200, {})
         ]
-        conn = HueConnectionInfo("host", "user")
+        conn = AuthenticatedHueConnection("host", "user")
         rm = CustomResourceManager(conn)
 
         res = rm.get()['1']
