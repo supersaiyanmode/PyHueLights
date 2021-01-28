@@ -8,14 +8,17 @@ import requests
 from .exceptions import DiscoveryFailed
 
 
-class HueRawConnectionInfo(object):
+class UnauthenticatedHueRawConnectionInfo(object):
     """ Represents the result of a Hue Bridge discovery. """
     def __init__(self, host):
         self.host = host
 
     def validate(self):
-        resp = requests.get("http://{}/description.xml".format(self.host))
-        if resp.status_code != 200:
+        try:
+            resp = requests.get("http://{}/description.xml".format(self.host))
+            if resp.status_code != 200:
+                return False
+        except IOError:
             return False
 
         return "Philips" in resp.text
@@ -28,7 +31,7 @@ class BaseDiscovery(object):
         return self.discovery_finished(connection_info)
 
     def validate_host(self, host):
-        connection_info = HueConnectionInfo(host)
+        connection_info = UnauthenticatedHueRawConnectionInfo(host)
 
         if not connection_info.validate():
             raise DiscoveryFailed
