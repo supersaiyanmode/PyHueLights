@@ -12,6 +12,14 @@ REGISTRATION_REQUESTED = 1
 REGISTRATION_SUCCEEDED = 2
 REGISTRATION_FAILED = 3
 
+
+class AuthenticatedHueConnection():
+    """ Represents a Hue connection with valid username. """
+    def __init__(self, host, username):
+        self.host = host
+        self.username = username
+
+
 class RegistrationWatcher(object):
     def __init__(self, host, app_name, timeout):
         self.url = "http://{}/api".format(host)
@@ -53,23 +61,24 @@ class RegistrationWatcher(object):
         self.event.wait()
 
 
-def register(connection_info, app, store, timeout=30.0):
+def register(unauthenticated_connection, app, store, timeout=30.0):
     """
     Looks into the store to check for previous registration. If absent, go ahead
     with new registration.
     """
     if "username" in store:
-        connection_info.username = store["username"]
-        return store["username"]
+        return AuthenticatedHueConnection(unauthenticated_connection.host,
+                                          store["username"])
 
-    watcher = RegistrationWatcher(
-        connection_info.host, app.app_name + "#" + app.client_name, timeout)
+    app_name = app.app_name + "#" + app.client_name
+    watcher = RegistrationWatcher(unauthenticated_connection.host, app_name,
+                                  timeout)
     watcher.start()
     watcher.wait()
 
     if watcher.status == REGISTRATION_SUCCEEDED:
         store["username"] = watcher.username
-        connection_info.username = watcher.username
-        return watcher.username
+        return AuthenticatedHueConnection(unauthenticated_connection.host,
+                                          watcher.username)
 
     raise RegistrationFailed()
