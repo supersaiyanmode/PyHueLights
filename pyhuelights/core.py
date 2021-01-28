@@ -1,8 +1,6 @@
 """ Contains HueApp, Bridge, Light classes."""
 
 
-import requests
-
 
 def validate_setter_values(field_info, val):
     allowed_values = field_info.get("values")
@@ -42,9 +40,12 @@ def update_from_object(result, key, obj):
         json_item_name = field_info.get('field', field_info["name"])
         obj_prop_name = field_info["name"]
         obj_attr_name = "field_" + obj_prop_name
+        optional = field_info.get('optional', False)
 
         if json_item_name != "$KEY" and json_item_name not in obj and \
                 not field_info.get("optional"):
+            if optional:
+                continue
             raise ValueError("No field in object: " + json_item_name)
 
         if sub_resource:
@@ -153,7 +154,7 @@ class LightState(HueResource):
         {"name": "on"},
         {"name": "reachable", "readonly": True},
         {"name": "color_mode", "field": "colormode", "readonly": True},
-        {"name": "effect", "values": ["colorloop", "none"]},
+        {"name": "effect", "values": ["colorloop", "none"], "optional": True},
     ]
 
     REQUEST_FIELDS = [
@@ -185,7 +186,7 @@ class GroupState(HueResource):
         {"name": "on"},
         {"name": "reachable", "readonly": True, "optional": True},
         {"name": "color_mode", "field": "colormode", "readonly": True},
-        {"name": "effect", "values": ["colorloop", "none"]},
+        {"name": "effect", "values": ["colorloop", "none"], "optional": True},
     ]
 
     REQUEST_FIELDS = [
