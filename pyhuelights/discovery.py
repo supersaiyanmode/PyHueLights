@@ -52,7 +52,7 @@ class NUPNPDiscovery(BaseDiscovery):
     network.
     """
 
-    NUPNP_URL = "https://www.meethue.com/api/nupnp"
+    NUPNP_URL = "https://discovery.meethue.com"
 
     def discover_host(self):
         try:
