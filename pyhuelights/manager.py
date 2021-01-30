@@ -1,7 +1,6 @@
 import requests
 
-from .core import update_from_object
-from .core import HueResource, Light, Group
+from .core import HueResource, Light, Group, update_from_object
 from .exceptions import RequestFailed
 
 

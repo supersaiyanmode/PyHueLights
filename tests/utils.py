@@ -2,7 +2,7 @@ from copy import deepcopy
 
 import requests
 
-from pyhuelights.core import HueResource, update_from_object
+from pyhuelights.core import HueResource, Field, update_from_object
 from pyhuelights.manager import BaseResourceManager, dict_parser
 
 
@@ -29,7 +29,7 @@ class FakeRequest(object):
 
 class SubSubResource(HueResource):
     FIELDS = [
-        {"name": "test", "values": [1, 2, 3, 4, 5]}
+        Field(obj_prop_name="test", values=[1, 2, 3, 4, 5])
     ]
 
     def relative_url(self):
@@ -38,8 +38,8 @@ class SubSubResource(HueResource):
 
 class SubResource(HueResource):
     FIELDS = [
-        {"name": "sub", "readonly": True},
-        {"name": "sub2", "cls": SubSubResource}
+        Field(obj_prop_name="sub", writable=False),
+        Field(obj_prop_name="sub2", cls=SubSubResource),
     ]
 
     def relative_url(self):
@@ -48,14 +48,11 @@ class SubResource(HueResource):
 
 class CustomResource(HueResource):
     FIELDS = [
-        {"name": "id", "field": "$KEY"},
-        {"name": "field1", "readonly": True},
-        {"name": "field2", "field": "f2"},
-        {"name": "field3", "cls": SubResource},
-    ]
-
-    REQUEST_FIELDS = [
-        {"name": "req", "field": "request"},
+        Field(obj_prop_name="id", is_key=True),
+        Field(obj_prop_name="field1", writable=False),
+        Field(obj_prop_name="field2", parse_json_name="f2"),
+        Field(obj_prop_name="field3", cls=SubResource),
+        Field(obj_prop_name="req", parse_json_name="request", parse=False),
     ]
 
     def relative_url(self):

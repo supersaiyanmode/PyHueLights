@@ -1,6 +1,6 @@
 import pytest
 
-from pyhuelights.manager import update_from_object
+from pyhuelights.core import EMPTY, update_from_object
 
 from utils import CustomResourceTestBase, SubResource, SubSubResource
 
@@ -24,15 +24,11 @@ class TestUpdateFromObject(CustomResourceTestBase):
            self.get_resource(self.obj)
 
     def test_update_from_bad_object(self):
-        # "field1" is missing.
+        # "field1" is not optional.
         del self.obj["field1"]
 
         with pytest.raises(ValueError):
            self.get_resource(self.obj)
-
-    def test_update_from_object_without_field(self):
-        with pytest.raises(ValueError):
-            update_from_object(object(), "", None)
 
     def test_property_update(self):
         resource = self.get_resource(self.obj)
@@ -40,16 +36,17 @@ class TestUpdateFromObject(CustomResourceTestBase):
         resource.field2 = "world"
         resource.field3.sub2.test = 2
 
-        assert resource.field2 == resource.field_field2 == "world"
-        assert resource.field3.sub2.test == resource.field3.sub2.field_test == 2
+        assert resource.field2  == "world"
+        assert resource.field3.sub2.test == 2
 
         with pytest.raises(AttributeError):
             resource.field1 = "new-value"
         with pytest.raises(AttributeError):
-            resource.field3 = SubResource()
+            resource.field3 = None
 
-        assert resource.dirty_flag == {"field2": True, "field3": True}
-        assert resource.field3.dirty_flag == {"sub2": True}
+        assert resource.dirty_flag == {"field2": True, "field3": True,
+                                       "req": False, "field1": False}
+        assert resource.field3.dirty_flag == {"sub2": True, "sub": False}
         assert resource.field3.sub2.dirty_flag == {"test": True}
 
     def test_property_update_invalid_value(self):
@@ -70,46 +67,49 @@ class TestUpdateFromObject(CustomResourceTestBase):
     def test_reset_dirty(self):
         resource = self.get_resource(self.obj)
 
-        assert resource.dirty_flag == {"field2": False, "field3": False}
+        assert not any(resource.dirty_flag.values())
 
         resource.field2 = "world"
         resource.field3.sub2.test = 2
 
-        assert resource.dirty_flag == {"field2": True, "field3": True}
-        assert resource.field3.dirty_flag == {"sub2": True}
+        assert {k for k, v in resource.dirty_flag.items() if v} == {"field2", "field3"}
+        assert resource.field3.dirty_flag == {"sub2": True, "sub": False}
         assert resource.field3.sub2.dirty_flag == {"test": True}
 
-        resource.clear_dirty()
+        resource.reset()
 
-        assert resource.dirty_flag == {"field2": False, "field3": False}
-        assert resource.field3.dirty_flag == {"sub2": False}
+        assert not any(resource.dirty_flag.values())
+        assert resource.field3.dirty_flag == {"sub": False, "sub2": False}
         assert resource.field3.sub2.dirty_flag == {"test": False}
 
         assert resource.field2 == "hello"
         assert resource.field3.sub2.test == 1
 
-    def test_update_state(self):
+    def test_commit(self):
         resource = self.get_resource(self.obj)
 
         resource.field2 = "world"
         resource.field3.sub2.test = 2
 
-        resource.update_state()
+        resource.commit()
 
-        assert resource.dirty_flag == {"field2": False, "field3": False}
+        assert not any(resource.dirty_flag.values())
+        assert resource.field3.dirty_flag == {"sub": False, "sub2": False}
         assert resource.field3.sub2.dirty_flag == {"test": False}
 
-        resource.clear_dirty()
+        assert resource.field2 == "world"
+
+        resource.reset()
 
         assert resource.field2 == "world"
         assert resource.field3.sub2.test == 2
 
 
 class TestInitObject(CustomResourceTestBase):
-    def test_init_object(self):
+    def test_non_parsed_field_dirty(self):
         resource = self.get_resource(self.obj)
 
-        assert resource.req is None
+        assert resource.req is EMPTY
 
         resource.req = "test"
 
@@ -121,6 +121,6 @@ class TestInitObject(CustomResourceTestBase):
         resource = self.get_resource(self.obj)
         resource.req = "test"
 
-        resource.clear_dirty()
+        resource.reset()
 
-        assert resource.req is None
+        assert resource.req is EMPTY
