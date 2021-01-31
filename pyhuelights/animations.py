@@ -27,7 +27,7 @@ def quadratic_transition(start, end, steps, a=1):
 
 
 class LightEffect(object):
-    def __init__(self, transition_time=3):
+    def __init__(self, transition_time=None):
         self.transition_time = transition_time
 
     def update_state(self, light):
@@ -40,7 +40,9 @@ class ColorLoopEffect(LightEffect):
         light.state.effect = "colorloop"
         yield light.state
 
-        time.sleep(self.transition_time - (time.time() - start_time))
+        sleep_time = self.transition_time - (time.time() - start_time)
+        if sleep_time > 0:
+            time.sleep(sleep_time)
 
         light.state.effect = "none"
         yield light.state
@@ -48,7 +50,7 @@ class ColorLoopEffect(LightEffect):
 
 class SwitchOffEffect(LightEffect):
     def update_state(self, light):
-        if self.transition_time:
+        if self.transition_time is not None:
             light.state.transition_time = self.transition_time
 
         light.state.on = False
@@ -56,8 +58,9 @@ class SwitchOffEffect(LightEffect):
 
 class SwitchOnEffect(LightEffect):
     def update_state(self, light):
-        if self.transition_time:
+        if self.transition_time is not None:
             light.state.transition_time = self.transition_time
 
         light.state.on = True
+        light.state.brightness = 254
         yield light.state

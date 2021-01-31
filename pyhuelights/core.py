@@ -154,6 +154,8 @@ class LightState(HueResource):
         Field(obj_prop_name="on"),
         Field(obj_prop_name="reachable", writable=False),
         Field(obj_prop_name="color_mode", parse_json_name="colormode"),
+        Field(obj_prop_name="brightness", parse_json_name="bri",
+              values=list(range(1, 255))),
         Field(obj_prop_name="effect", values={"colorloop", "none"},
               optional=True),
         Field(obj_prop_name="transition_time", parse_json_name="transitiontime",
