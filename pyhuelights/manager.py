@@ -73,7 +73,7 @@ class LightsManager(BaseResourceManager):
         """
         Runs the change represented by effect on the given light instance.
         """
-        light.clear_dirty()
+        light.reset()
         for state in effect.update_state(light):
             self.make_resource_update_request(state)
 
