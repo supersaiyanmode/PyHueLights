@@ -75,20 +75,20 @@ class Field(object):
         field = self
 
         def getter_func(self):
-            return obj.data[field.prop_name()]
+            return self.data[field.prop_name()]
 
         def setter_func(self, val):
             if (field.optional and
-                obj.data.get(field.prop_name(), EMPTY) is EMPTY):
+                self.data.get(field.prop_name(), EMPTY) is EMPTY):
                 raise ValueError("Unsupported operation on this field.")
 
             if field.values and val not in field.values:
                 raise ValueError("Not a valid value.")
 
-            obj.data[field.prop_name()] = val
+            self.data[field.prop_name()] = val
 
             # Walk up the hierarchy and set the dirty flags.
-            current_obj = obj
+            current_obj = self
             current_attr = field.prop_name()
             while current_obj is not None:
                 current_obj.dirty_flag[current_attr] = True
