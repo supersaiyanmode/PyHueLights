@@ -6,15 +6,16 @@
 
 ## Sample Code
 
-    from highlight.discovery import DefaultDiscovery
-    from highlight.core import *
-    from highlight.manager import *
-    from highlight.animations import *
-    from highlight.registration import *
+    from pyhuelights.discovery import DefaultDiscovery
+    from pyhuelights.core import *
+    from pyhuelights.manager import *
+    from pyhuelights.animations import *
+    from pyhuelights.registration import *
     
+    store = {}
     conn = DefaultDiscovery().discover()
-    register(conn, HueApp("test", ""), store)   # Remember to push the button on the hub within
-                                                # the last 30 sec of executing this line.
+    conn = register(conn, HueApp("test", ""), store)   # Remember to push the button on the hub within
+                                                       # the last 30 sec of executing this line.
     
     lm = LightsManager(conn)
     lights = lm.get_all_lights()
