@@ -31,7 +31,8 @@ class LightEffect(object):
         self.transition_time = transition_time
 
     def update_state(self, light):
-        raise NotImplementedError
+        if self.transition_time is not None:
+            light.state.transition_time = self.transition_time
 
 
 class ColorLoopEffect(LightEffect):
@@ -48,19 +49,50 @@ class ColorLoopEffect(LightEffect):
         yield light.state
 
 
+class SetLightStateEffect(LightEffect):
+    def __init__(self, on, color=None, brightness=None, transition_time=None):
+        super().__init__(transition_time)
+        self.on = on
+        self.color = color
+        self.brightness = brightness
+
+    def update_state(self, light):
+        super().update_state(light)
+        light.state.on = self.on
+        if self.brightness is not None:
+            light.state.brightness = self.brightness
+
+        if self.color is not None:
+            light.state.hue, light.state.saturation = self.color
+
+        yield light.state
+
+
+class SwitchOnEffect(SetLightStateEffect):
+    def __init__(self, **kwargs):
+        super().__init__(on=True, brightness=254, **kwargs)
+
+
 class SwitchOffEffect(LightEffect):
-    def update_state(self, light):
-        if self.transition_time is not None:
-            light.state.transition_time = self.transition_time
+    def __init__(self, **kwargs):
+        super().__init__(on=False, **kwargs)
 
-        light.state.on = False
-        yield light.state
 
-class SwitchOnEffect(LightEffect):
-    def update_state(self, light):
-        if self.transition_time is not None:
-            light.state.transition_time = self.transition_time
+class RotateEffect(LightEffect):
+    def __init__(self, colors, transition_time):
+        super().__init__(transition_time)
+        self.effects = [SetLightStateEffect(True, x, 100) for x in colors]
 
-        light.state.on = True
-        light.state.brightness = 254
-        yield light.state
+    def update_state(self, lights):
+        if self.transition_time is None:
+            raise Exception("Transition time is required.")
+
+        len_effects = len(self.effects)
+        start_time = time.time()
+        iteration = -1
+        while time.time() - start_time <= self.transition_time:
+            iteration += 1
+            for index, light in enumerate(lights):
+                effect_index = (index + iteration) % len_effects
+                yield from self.effects[effect_index].update_state(light)
+            time.sleep(0.1)
