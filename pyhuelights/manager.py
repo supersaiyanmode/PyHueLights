@@ -69,23 +69,22 @@ class LightsManager(BaseResourceManager):
         obj = self.make_request(relative_url="/lights", method="get")
         return self.parse_response(obj, parser=dict_parser(Light))
 
-    def run_effect(self, light, effect):
-        """
-        Runs the change represented by effect on the given light instance.
-        """
-        light.reset()
-        for state in effect.update_state(light):
-            self.make_resource_update_request(state)
-
-
-class GroupsManager(BaseResourceManager):
     def get_all_groups(self):
         """ Retrieves all groups on the bridge."""
         obj = self.make_request(relative_url='/groups', method='get')
         return self.parse_response(obj, parser=dict_parser(Group))
 
-    def run_effect(self, group, effect):
-        """ Runs the change on the entire group. """
-        group.clear_dirty()
-        for state in effect.update_state(group):
-            self.make_resource_update_request(state)
+
+    def run_effect(self, light, effect):
+        """
+        Runs the change represented by effect on the given light instance.
+        """
+        if isinstance(light, Light):
+            light.reset()
+        else:
+            for l in light:
+                l.reset()
+
+        for state in effect.update_state(light):
+            res = self.make_resource_update_request(state)
+
