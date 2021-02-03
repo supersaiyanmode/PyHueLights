@@ -83,7 +83,7 @@ class Field(object):
                 raise ValueError("Unsupported operation on this field.")
 
             if field.values and val not in field.values:
-                raise ValueError("Not a valid value.")
+                raise ValueError(val)
 
             self.data[field.prop_name()] = val
 
@@ -154,8 +154,12 @@ class LightState(HueResource):
         Field(obj_prop_name="on"),
         Field(obj_prop_name="reachable", writable=False),
         Field(obj_prop_name="color_mode", parse_json_name="colormode"),
+        Field(obj_prop_name="saturation", parse_json_name="sat",
+              values=range(1, 255), optional=True),
         Field(obj_prop_name="brightness", parse_json_name="bri",
-              values=list(range(1, 255))),
+              values=range(1, 255), optional=True),
+        Field(obj_prop_name="hue", parse_json_name="hue",
+              values=range(1, 65536), optional=True),
         Field(obj_prop_name="effect", values={"colorloop", "none"},
               optional=True),
         Field(obj_prop_name="transition_time", parse_json_name="transitiontime",
