@@ -173,6 +173,8 @@ class LightState(HueResource):
 class Light(HueResource):
     FIELDS = [
         Field(obj_prop_name="id", is_key=True),
+        Field(obj_prop_name="unique_id", parse_json_name="uniqueid",
+              writable=False),
         Field(obj_prop_name="type", writable=False),
         Field(obj_prop_name="model_id", parse_json_name="modelid",
               writable=False),
