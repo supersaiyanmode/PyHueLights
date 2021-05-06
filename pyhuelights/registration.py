@@ -21,7 +21,7 @@ class AuthenticatedHueConnection():
 
 
 class RegistrationWatcher(object):
-    def __init__(self, host, app_name, timeout):
+    def __init__(self, host, app_name, timeout, callback=None):
         self.url = "http://{}/api".format(host)
         self.app_name = app_name
         self.timeout = timeout
@@ -29,6 +29,8 @@ class RegistrationWatcher(object):
         self.status = None
         self.username = None
         self.event = Event()
+
+        self.callback = self.event.set if callback is None else callback
 
     def run(self):
         started = time.time()
@@ -52,7 +54,7 @@ class RegistrationWatcher(object):
         if self.status == REGISTRATION_REQUESTED:
             self.status = REGISTRATION_FAILED
 
-        self.event.set()
+        self.callback()
 
     def start(self):
         self.thread.start()
