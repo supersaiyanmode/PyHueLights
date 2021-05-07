@@ -6,7 +6,7 @@ except ImportError:
 
 setup(
     name='pyhuelights',
-    version='0.8.0',
+    version='0.8.1',
     author='Srivatsan Iyer',
     author_email='supersaiyanmode.rox@gmail.com',
     packages=[

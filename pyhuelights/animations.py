@@ -73,7 +73,7 @@ class SwitchOnEffect(SetLightStateEffect):
         super().__init__(on=True, brightness=254, **kwargs)
 
 
-class SwitchOffEffect(LightEffect):
+class SwitchOffEffect(SetLightStateEffect):
     def __init__(self, **kwargs):
         super().__init__(on=False, **kwargs)
 
