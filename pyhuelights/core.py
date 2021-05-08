@@ -1,10 +1,17 @@
 """ Contains HueApp, Bridge, Light classes."""
 
 from dataclasses import dataclass, field
-from typing import Type, Set
+from typing import Type, Callable
 
 
 EMPTY = object()
+
+
+def contains(params):
+    def evaluate(arg):
+        return arg in params
+
+    return evaluate
 
 
 class HueResource(object):
@@ -51,7 +58,7 @@ class Field(object):
     is_key: bool = False
     parse: bool = True
     optional: bool = False
-    values: Set[str] = field(default_factory=set)
+    validator: Callable[..., str] = None
 
     def prop_name(self):
         return self.obj_prop_name
@@ -82,7 +89,7 @@ class Field(object):
                 self.data.get(field.prop_name(), EMPTY) is EMPTY):
                 raise ValueError("Unsupported operation on this field.")
 
-            if field.values and val not in field.values:
+            if field.validator and not field.validator(val):
                 raise ValueError(val)
 
             self.data[field.prop_name()] = val
@@ -153,14 +160,15 @@ class LightState(HueResource):
     FIELDS = [
         Field(obj_prop_name="on"),
         Field(obj_prop_name="reachable", writable=False),
-        Field(obj_prop_name="color_mode", parse_json_name="colormode"),
+        Field(obj_prop_name="color_mode", parse_json_name="colormode",
+              validator=contains({"ct", "hs", "xy"})),
         Field(obj_prop_name="saturation", parse_json_name="sat",
-              values=range(1, 255), optional=True),
+              validator=contains(range(1, 255)), optional=True),
         Field(obj_prop_name="brightness", parse_json_name="bri",
-              values=range(1, 255), optional=True),
+              validator=contains(range(1, 255)), optional=True),
         Field(obj_prop_name="hue", parse_json_name="hue",
-              values=range(1, 65536), optional=True),
-        Field(obj_prop_name="effect", values={"colorloop", "none"},
+              validator=contains(range(1, 65536)), optional=True),
+        Field(obj_prop_name="effect", validator=contains({"colorloop", "none"}),
               optional=True),
         Field(obj_prop_name="transition_time", parse_json_name="transitiontime",
               parse=False),
@@ -195,7 +203,7 @@ class GroupState(HueResource):
         Field(obj_prop_name="on"),
         Field(obj_prop_name="reachable", writable=False, optional=True),
         Field(obj_prop_name="color_mode", parse_json_name="colormode"),
-        Field(obj_prop_name="effect", values={"colorloop", "none"},
+        Field(obj_prop_name="effect", validator=contains({"colorloop", "none"}),
               optional=True),
         Field(obj_prop_name="transition_time", parse_json_name="transitiontime",
               parse=False),
