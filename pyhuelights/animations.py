@@ -1,5 +1,7 @@
 import time
 
+from pyhuelights.core import Color
+
 
 def linear_transition(start, end, steps):
     if steps < 1:
@@ -51,6 +53,9 @@ class ColorLoopEffect(LightEffect):
 
 class SetLightStateEffect(LightEffect):
     def __init__(self, on, color=None, brightness=None, transition_time=None):
+        if not isinstance(color, Color):
+            raise ValueError("Expected a Color instance.")
+
         super().__init__(transition_time)
         self.on = on
         self.color = color
@@ -63,7 +68,7 @@ class SetLightStateEffect(LightEffect):
             light.state.brightness = self.brightness
 
         if self.color is not None:
-            light.state.hue, light.state.saturation = self.color
+            light.state.set_color(self.color)
 
         yield light.state
 

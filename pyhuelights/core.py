@@ -1,7 +1,9 @@
 """ Contains HueApp, Bridge, Light classes."""
 
+import math
 from dataclasses import dataclass, field
 from typing import Type, Callable
+from collections.abc import Collection
 
 
 EMPTY = object()
@@ -12,6 +14,64 @@ def contains(params):
         return arg in params
 
     return evaluate
+
+
+def validate_xy(value):
+    return isinstance(value, Collection) and len(value) == 2
+
+
+def validate_temp(value):
+    return 153 <= value <= 500
+
+
+def rgb_to_xy(r, g, b):
+    # This is based on original code from http://stackoverflow.com/a/22649803
+    def enhance_color(normalized):
+        if normalized > 0.04045:
+            return math.pow((normalized + 0.055) / (1.0 + 0.055), 2.4)
+        else:
+            return normalized / 12.92
+
+    r = enhance_color(r / 255.0)
+    g = enhance_color(g / 255.0)
+    b = enhance_color(b / 255.0)
+
+    x = r * 0.649926 + g * 0.103455 + b * 0.197109
+    y = r * 0.234327 + g * 0.743075 + b * 0.022598
+    z = r * 0.000000 + g * 0.053077 + b * 1.035763
+
+    if x + y + z == 0:
+        return 0, 0
+    else:
+        return x / (x + y + z), y / (x + y + z)
+
+
+class Color:
+    def __init__(self, temp=None, xy=None):
+        if not xy and not temp:
+            raise ValueError("One of temp or xy must be provided.")
+
+        if xy and not validate_xy(xy):
+            raise ValueError("Bad xy value.")
+
+        if temp and not validate_temp(temp):
+            raise ValueError("Temperature should be between 2000 and 6500")
+
+        if xy:
+            self.color_mode = 'xy'
+        elif temp:
+            self.color_mode = 'ct'
+
+        self.xy = xy
+        self.temperature = temp
+
+    @staticmethod
+    def from_rgb(r, g, b):
+        return Color(xy=rgb_to_xy(r, g, b))
+
+    @staticmethod
+    def from_temperature(temp):
+        return Color(temp=int(1000000.0 / temp))
 
 
 class HueResource(object):
@@ -168,6 +228,10 @@ class LightState(HueResource):
               validator=contains(range(1, 255)), optional=True),
         Field(obj_prop_name="hue", parse_json_name="hue",
               validator=contains(range(1, 65536)), optional=True),
+        Field(obj_prop_name="temperature", parse_json_name="ct",
+              validator=contains(range(153, 501)), optional=True),
+        Field(obj_prop_name="xy", parse_json_name="xy",optional=True,
+              validator=validate_xy),
         Field(obj_prop_name="effect", validator=contains({"colorloop", "none"}),
               optional=True),
         Field(obj_prop_name="transition_time", parse_json_name="transitiontime",
@@ -176,6 +240,19 @@ class LightState(HueResource):
 
     def relative_url(self):
         return self.parent.relative_url() + "/state"
+
+    def set_color(self, color: Color):
+        if not isinstance(color, Color):
+            raise ValueError("Expected a Color instance.")
+
+        if color.color_mode == 'xy':
+            self.xy = color.xy
+        elif color.color_mode == 'ct':
+            self.temperature = color.temperature
+        else:
+            raise ValueError("Unsupported color mode.")
+
+        self.color_mode = color.color_mode
 
 
 class Light(HueResource):
