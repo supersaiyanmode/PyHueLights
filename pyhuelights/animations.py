@@ -53,7 +53,7 @@ class ColorLoopEffect(LightEffect):
 
 class SetLightStateEffect(LightEffect):
     def __init__(self, on, color=None, brightness=None, transition_time=None):
-        if not isinstance(color, Color):
+        if color and not isinstance(color, Color):
             raise ValueError("Expected a Color instance.")
 
         super().__init__(transition_time)
