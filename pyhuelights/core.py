@@ -1,5 +1,6 @@
 """ Contains HueApp, Bridge, Light classes."""
 
+import colorsys
 import math
 from dataclasses import dataclass, field
 from typing import Type, Callable
@@ -72,6 +73,11 @@ class Color:
     @staticmethod
     def from_temperature(temp):
         return Color(temp=int(1000000.0 / temp))
+
+    @staticmethod
+    def from_hue_sat(hue, sat):
+        return Color(xy=rgb_to_xy(*colorsys.hsv_to_rgb(hue / 360.0,
+                                                       sat / 100.0, 1.0)))
 
 
 class HueResource(object):
