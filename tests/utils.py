@@ -2,7 +2,7 @@ from copy import deepcopy
 
 import requests
 
-from pyhuelights.core import HueResource, Field, update_from_object
+from pyhuelights.core import HueResource, Field, update_from_object, contains
 from pyhuelights.manager import BaseResourceManager, dict_parser
 
 
@@ -29,7 +29,7 @@ class FakeRequest(object):
 
 class SubSubResource(HueResource):
     FIELDS = [
-        Field(obj_prop_name="test", values=[1, 2, 3, 4, 5])
+        Field(obj_prop_name="test", validator=contains({1, 2, 3, 4, 5}))
     ]
 
     def relative_url(self):
