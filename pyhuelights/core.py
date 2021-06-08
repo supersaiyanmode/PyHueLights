@@ -261,6 +261,26 @@ class LightState(HueResource):
         self.color_mode = color.color_mode
 
 
+class LightCapabilities(HueResource):
+    """ Represents the capabilities of the light. """
+
+    FIELDS = [
+        Field(obj_prop_name="control", parse_json_name="control",
+              writable=False),
+        Field(obj_prop_name="streaming", parse_json_name="streaming",
+              writable=False, optional=True)
+    ]
+
+    def supported_color_modes(self):
+        res = []
+        if "colorgamut" in self.control:
+            res.append("hs")
+        if "ct" in self.control:
+            res.append("temp")
+
+        return res
+
+
 class Light(HueResource):
     FIELDS = [
         Field(obj_prop_name="id", is_key=True),
@@ -273,6 +293,8 @@ class Light(HueResource):
               writable=False),
         Field(obj_prop_name="name"),
         Field(obj_prop_name="state", cls=LightState),
+        Field(obj_prop_name="capabilities", cls=LightCapabilities,
+              writable=False),
     ]
 
     def relative_url(self):
