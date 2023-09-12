@@ -3,9 +3,30 @@ This module contains all the discovery method used to discover the Philips
 Hue bridge on the current network.
 """
 
+import socket
+import time
+import threading
+
 import requests
 
+from zeroconf import ServiceBrowser, ServiceListener, Zeroconf
+
 from .exceptions import DiscoveryFailed
+
+class MDNSListener(ServiceListener):
+    def __init__(self, callback, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.callback = callback
+
+    def add_service(self, zc, typ, name) -> None:
+        info = zc.get_service_info(typ, name)
+        self.callback(info)
+
+    def remove_service(self, zc, type_, name) -> None:
+        pass
+
+    def update_service(self, zc, type_, name) -> None:
+        pass
 
 
 class UnauthenticatedHueRawConnectionInfo(object):
@@ -79,20 +100,37 @@ class StaticHostDiscovery(BaseDiscovery):
         return 'philips-hue'
 
 
-class SSDPDiscovery(BaseDiscovery):
+class MDNSDiscovery(BaseDiscovery):
     """
-    SSDP based discovery of the Hue bridge.
+    MDNS based discovery of the Hue bridge.
     """
 
     def discover_host(self):
-        raise DiscoveryFailed
+        devices = []
+        event = threading.Event()
+        def on_device_found(x):
+            devices.append(x)
+            event.set()
+
+        zeroconf = Zeroconf()
+        listener = MDNSListener(on_device_found)
+        browser = ServiceBrowser(zeroconf, "_hue._tcp.local.", listener)
+
+        event.wait(timeout=5)
+
+        zeroconf.close()
+
+        if not devices:
+            raise DiscoveryFailed
+
+        return socket.inet_ntoa(devices[0].addresses[0])
 
 
 class DefaultDiscovery(object):
     """
     Discovery methods that tries all other discovery methods sequentially.
     """
-    METHODS = [StaticHostDiscovery, NUPNPDiscovery, SSDPDiscovery]
+    METHODS = [MDNSDiscovery, StaticHostDiscovery, NUPNPDiscovery]
 
     def discover(self):
         """ Tries all the discovery methods in self.METHODS. """

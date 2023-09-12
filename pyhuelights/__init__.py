@@ -1,7 +1,7 @@
-from .discovery import DefaultDiscovery, StaticHostDiscovery, SSDPDiscovery
+from .discovery import DefaultDiscovery, StaticHostDiscovery, MDNSDiscovery
 from .discovery import NUPNPDiscovery, BaseDiscovery
 
 __all__ = [
-    'DefaultDiscovery', 'StaticHostDiscovery', 'SSDPDiscovery',
+    'DefaultDiscovery', 'StaticHostDiscovery', 'MDNSDiscovery',
     'NUPNPDiscovery', 'BaseDiscovery'
 ]
