@@ -5,6 +5,7 @@ from .exceptions import RequestFailed
 
 
 def dict_parser(cls):
+
     def parser(response):
         obj = {}
         for key, value in response.items():
@@ -58,22 +59,34 @@ class BaseResourceManager(object):
             raise RequestFailed(response.status_code, response.text)
         return response.json()
 
+    def make_resource_get_request(self, obj):
+        return self.make_request(method='get', relative_url=obj.relative_url())
+
     def make_resource_update_request(self, obj, method='put', **kwargs):
-        return self.make_request(method=method, relative_url=obj.relative_url(),
-                                 body=construct_body(obj), **kwargs)
+        return self.make_request(method=method,
+                                 relative_url=obj.relative_url(),
+                                 body=construct_body(obj),
+                                 **kwargs)
 
 
 class LightsManager(BaseResourceManager):
+
     def get_all_lights(self):
         """ Retrieves all lights from the bridge, and returns a dict."""
         obj = self.make_request(relative_url="/lights", method="get")
         return self.parse_response(obj, parser=dict_parser(Light))
 
+    def get_resource(self, resource):
+        """ Retrieves the latest state of the provided resource. """
+        res = self.make_resource_get_request(resource)
+        resp = resource.__class__()
+        update_from_object(resp, resource.id, res)
+        return resp
+
     def get_all_groups(self):
         """ Retrieves all groups on the bridge."""
         obj = self.make_request(relative_url='/groups', method='get')
         return self.parse_response(obj, parser=dict_parser(Group))
-
 
     def run_effect(self, light, effect):
         """
@@ -87,4 +100,3 @@ class LightsManager(BaseResourceManager):
 
         for state in effect.update_state(light):
             res = self.make_resource_update_request(state)
-
