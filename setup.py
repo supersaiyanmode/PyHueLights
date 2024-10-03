@@ -3,7 +3,6 @@ try:
 except ImportError:
     from distutils.core import setup
 
-
 setup(
     name='pyhuelights',
     version='0.8.2',

@@ -6,11 +6,11 @@ from dataclasses import dataclass, field
 from typing import Type, Callable
 from collections.abc import Collection
 
-
 EMPTY = object()
 
 
 def contains(params):
+
     def evaluate(arg):
         return arg in params
 
@@ -48,6 +48,7 @@ def rgb_to_xy(r, g, b):
 
 
 class Color:
+
     def __init__(self, temp=None, xy=None):
         if not xy and not temp:
             raise ValueError("One of temp or xy must be provided.")
@@ -76,11 +77,12 @@ class Color:
 
     @staticmethod
     def from_hue_sat(hue, sat):
-        return Color(xy=rgb_to_xy(*colorsys.hsv_to_rgb(hue / 360.0,
-                                                       sat / 100.0, 1.0)))
+        return Color(xy=rgb_to_xy(*colorsys.hsv_to_rgb(hue / 360.0, sat /
+                                                       100.0, 1.0)))
 
 
 class HueResource(object):
+
     def __init__(self, parent=None, attr_in_parent=None):
         self.parent = parent
         self.attr_in_parent = attr_in_parent
@@ -89,7 +91,8 @@ class HueResource(object):
         self.property_to_json_key_map = {}
         for field in self.FIELDS:
             field.init_object(self)
-            self.property_to_json_key_map[field.prop_name()] = field.json_name()
+            self.property_to_json_key_map[
+                field.prop_name()] = field.json_name()
 
     def relative_url(self):
         """
@@ -151,8 +154,8 @@ class Field(object):
             return self.data[field.prop_name()]
 
         def setter_func(self, val):
-            if (field.optional and
-                self.data.get(field.prop_name(), EMPTY) is EMPTY):
+            if (field.optional
+                    and self.data.get(field.prop_name(), EMPTY) is EMPTY):
                 raise ValueError("Unsupported operation on this field.")
 
             if field.validator and not field.validator(val):
@@ -182,10 +185,11 @@ class Field(object):
             return
 
         if self.cls:
-            if (self.json_name() not in json or
-                not isinstance(json[self.json_name()], dict)):
-                raise ValueError(f"Expected object for: {self}, in {json} at " +
-                                 self.json_name())
+            if (self.json_name() not in json
+                    or not isinstance(json[self.json_name()], dict)):
+                raise ValueError(
+                    f"Expected object for: {self}, in {json} at " +
+                    self.json_name())
             value = self.cls(parent=obj, attr_in_parent=self.prop_name())
             update_from_object(value, None, json[self.json_name()])
             obj.dirty_flag[self.prop_name()] = False
@@ -208,7 +212,6 @@ class Field(object):
         obj.dirty_flag[self.prop_name()] = False
 
 
-
 class HueApp(HueResource):
     """ Represents Hue App. """
 
@@ -226,21 +229,34 @@ class LightState(HueResource):
     FIELDS = [
         Field(obj_prop_name="on"),
         Field(obj_prop_name="reachable", writable=False),
-        Field(obj_prop_name="color_mode", parse_json_name="colormode",
+        Field(obj_prop_name="color_mode",
+              parse_json_name="colormode",
               validator=contains({"ct", "hs", "xy"})),
-        Field(obj_prop_name="saturation", parse_json_name="sat",
-              validator=contains(range(1, 255)), optional=True),
-        Field(obj_prop_name="brightness", parse_json_name="bri",
-              validator=contains(range(1, 255)), optional=True),
-        Field(obj_prop_name="hue", parse_json_name="hue",
-              validator=contains(range(1, 65536)), optional=True),
-        Field(obj_prop_name="temperature", parse_json_name="ct",
-              validator=contains(range(153, 501)), optional=True),
-        Field(obj_prop_name="xy", parse_json_name="xy",optional=True,
-              validator=validate_xy),
-        Field(obj_prop_name="effect", validator=contains({"colorloop", "none"}),
+        Field(obj_prop_name="saturation",
+              parse_json_name="sat",
+              validator=contains(range(1, 255)),
               optional=True),
-        Field(obj_prop_name="transition_time", parse_json_name="transitiontime",
+        Field(obj_prop_name="brightness",
+              parse_json_name="bri",
+              validator=contains(range(1, 255)),
+              optional=True),
+        Field(obj_prop_name="hue",
+              parse_json_name="hue",
+              validator=contains(range(1, 65536)),
+              optional=True),
+        Field(obj_prop_name="temperature",
+              parse_json_name="ct",
+              validator=contains(range(153, 501)),
+              optional=True),
+        Field(obj_prop_name="xy",
+              parse_json_name="xy",
+              optional=True,
+              validator=validate_xy),
+        Field(obj_prop_name="effect",
+              validator=contains({"colorloop", "none"}),
+              optional=True),
+        Field(obj_prop_name="transition_time",
+              parse_json_name="transitiontime",
               parse=False),
     ]
 
@@ -265,10 +281,13 @@ class LightCapabilities(HueResource):
     """ Represents the capabilities of the light. """
 
     FIELDS = [
-        Field(obj_prop_name="control", parse_json_name="control",
+        Field(obj_prop_name="control",
+              parse_json_name="control",
               writable=False),
-        Field(obj_prop_name="streaming", parse_json_name="streaming",
-              writable=False, optional=True)
+        Field(obj_prop_name="streaming",
+              parse_json_name="streaming",
+              writable=False,
+              optional=True)
     ]
 
     def supported_color_modes(self):
@@ -284,16 +303,20 @@ class LightCapabilities(HueResource):
 class Light(HueResource):
     FIELDS = [
         Field(obj_prop_name="id", is_key=True),
-        Field(obj_prop_name="unique_id", parse_json_name="uniqueid",
+        Field(obj_prop_name="unique_id",
+              parse_json_name="uniqueid",
               writable=False),
         Field(obj_prop_name="type", writable=False),
-        Field(obj_prop_name="model_id", parse_json_name="modelid",
+        Field(obj_prop_name="model_id",
+              parse_json_name="modelid",
               writable=False),
-        Field(obj_prop_name="software_version", parse_json_name="swversion",
+        Field(obj_prop_name="software_version",
+              parse_json_name="swversion",
               writable=False),
         Field(obj_prop_name="name"),
         Field(obj_prop_name="state", cls=LightState),
-        Field(obj_prop_name="capabilities", cls=LightCapabilities,
+        Field(obj_prop_name="capabilities",
+              cls=LightCapabilities,
               writable=False),
     ]
 
@@ -308,9 +331,11 @@ class GroupState(HueResource):
         Field(obj_prop_name="on"),
         Field(obj_prop_name="reachable", writable=False, optional=True),
         Field(obj_prop_name="color_mode", parse_json_name="colormode"),
-        Field(obj_prop_name="effect", validator=contains({"colorloop", "none"}),
+        Field(obj_prop_name="effect",
+              validator=contains({"colorloop", "none"}),
               optional=True),
-        Field(obj_prop_name="transition_time", parse_json_name="transitiontime",
+        Field(obj_prop_name="transition_time",
+              parse_json_name="transitiontime",
               parse=False),
     ]
 
@@ -324,11 +349,14 @@ class Group(HueResource):
         Field(obj_prop_name="lights", optional=True),
         Field(obj_prop_name="name"),
         Field(obj_prop_name="type", writable=False),
-        Field(obj_prop_name="group_class", parse_json_name="class",
+        Field(obj_prop_name="group_class",
+              parse_json_name="class",
               optional=True),
         Field(obj_prop_name="state", parse_json_name="action", cls=GroupState),
-        Field(obj_prop_name="model_id", parse_json_name="modelid",
-              writable=False, optional=True),
+        Field(obj_prop_name="model_id",
+              parse_json_name="modelid",
+              writable=False,
+              optional=True),
     ]
 
     def relative_url(self):
@@ -338,4 +366,3 @@ class Group(HueResource):
 def update_from_object(resource, key, json):
     for field in resource.FIELDS:
         field.update(resource, key, json)
-
