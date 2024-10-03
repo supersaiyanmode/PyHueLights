@@ -1,4 +1,6 @@
+import json
 import requests
+from requests_sse import EventSource
 
 from .core import HueResource, Light, Group, update_from_object
 from .exceptions import RequestFailed
@@ -59,8 +61,10 @@ class BaseResourceManager(object):
             raise RequestFailed(response.status_code, response.text)
         return response.json()
 
-    def make_resource_get_request(self, obj):
-        return self.make_request(method='get', relative_url=obj.relative_url())
+    def make_resource_get_request(self, obj, relative_url=None):
+        return self.make_request(method='get',
+                                 relative_url=(relative_url
+                                               or obj.relative_url()))
 
     def make_resource_update_request(self, obj, method='put', **kwargs):
         return self.make_request(method=method,
@@ -76,12 +80,21 @@ class LightsManager(BaseResourceManager):
         obj = self.make_request(relative_url="/lights", method="get")
         return self.parse_response(obj, parser=dict_parser(Light))
 
-    def get_resource(self, resource):
+    def get_resource(self, resource=None, resource_id=None, typ=None):
         """ Retrieves the latest state of the provided resource. """
-        res = self.make_resource_get_request(resource)
-        resp = resource.__class__()
-        update_from_object(resp, resource.id, res)
-        return resp
+        if resource:
+            res = self.make_resource_get_request(resource)
+            resp = resource.__class__()
+            update_from_object(resp, resource.id, res)
+            return resp
+        elif resource_id is not None and typ is not None:
+            resource = typ()
+            res = self.make_resource_get_request(
+                resource, typ.make_relative_url(resource_id))
+            update_from_object(resource, resource_id, res)
+            return resource
+
+        raise ValueError("Expected one of resource or <resource_id, typ>")
 
     def get_all_groups(self):
         """ Retrieves all groups on the bridge."""
@@ -100,3 +113,18 @@ class LightsManager(BaseResourceManager):
 
         for state in effect.update_state(light):
             res = self.make_resource_update_request(state)
+
+    def iter_events(self):
+        url = 'https://' + self.connection_info.host + '/eventstream/clip/v2'
+        headers = {'hue-application-key': self.connection_info.username}
+        with EventSource(url, headers=headers, verify=False) as events:
+            for event in events:
+                for change in json.loads(event.data):
+                    for data in change["data"]:
+                        light_id = data.get("id_v1")
+                        if not light_id or not light_id.startswith("/lights"):
+                            continue
+
+                        yield self.get_resource(resource_id=light_id.replace(
+                            "/lights/", ""),
+                                                typ=Light)

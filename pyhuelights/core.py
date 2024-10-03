@@ -117,6 +117,10 @@ class HueResource(object):
             if field.can_be_dirty() and field.prop_name() in self.dirty_flag:
                 field.reset(self)
 
+    def __str__(self):
+        return self.__class__.__name__ + "(" + ", ".join(
+            str(k) + "=" + str(v) for k, v in self.data.items()) + ")"
+
 
 @dataclass
 class Field(object):
@@ -321,7 +325,11 @@ class Light(HueResource):
     ]
 
     def relative_url(self):
-        return "/lights/" + self.id
+        return Light.make_relative_url(self.id)
+
+    @classmethod
+    def make_relative_url(self, light_id):
+        return "/lights/" + light_id
 
 
 class GroupState(HueResource):

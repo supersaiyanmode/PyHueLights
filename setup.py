@@ -18,5 +18,6 @@ setup(
     install_requires=[
         "requests",
         "zeroconf",
+        "requests_sse",
     ],
 )
