@@ -6,6 +6,7 @@ from utils import CustomResourceTestBase, SubResource, SubSubResource
 
 
 class TestUpdateFromObject(CustomResourceTestBase):
+
     def test_update_from_object(self):
         resource = self.get_resource(self.obj)
 
@@ -21,14 +22,14 @@ class TestUpdateFromObject(CustomResourceTestBase):
         self.obj["field3"]["sub2"] = "subval2"
 
         with pytest.raises(ValueError):
-           self.get_resource(self.obj)
+            self.get_resource(self.obj)
 
     def test_update_from_bad_object(self):
         # "field1" is not optional.
         del self.obj["field1"]
 
         with pytest.raises(ValueError):
-           self.get_resource(self.obj)
+            self.get_resource(self.obj)
 
     def test_property_update(self):
         resource = self.get_resource(self.obj)
@@ -36,7 +37,7 @@ class TestUpdateFromObject(CustomResourceTestBase):
         resource.field2 = "world"
         resource.field3.sub2.test = 2
 
-        assert resource.field2  == "world"
+        assert resource.field2 == "world"
         assert resource.field3.sub2.test == 2
 
         with pytest.raises(AttributeError):
@@ -44,8 +45,12 @@ class TestUpdateFromObject(CustomResourceTestBase):
         with pytest.raises(AttributeError):
             resource.field3 = None
 
-        assert resource.dirty_flag == {"field2": True, "field3": True,
-                                       "req": False, "field1": False}
+        assert resource.dirty_flag == {
+            "field2": True,
+            "field3": True,
+            "req": False,
+            "field1": False
+        }
         assert resource.field3.dirty_flag == {"sub2": True, "sub": False}
         assert resource.field3.sub2.dirty_flag == {"test": True}
 
@@ -72,7 +77,9 @@ class TestUpdateFromObject(CustomResourceTestBase):
         resource.field2 = "world"
         resource.field3.sub2.test = 2
 
-        assert {k for k, v in resource.dirty_flag.items() if v} == {"field2", "field3"}
+        assert {k
+                for k, v in resource.dirty_flag.items()
+                if v} == {"field2", "field3"}
         assert resource.field3.dirty_flag == {"sub2": True, "sub": False}
         assert resource.field3.sub2.dirty_flag == {"test": True}
 
@@ -106,6 +113,7 @@ class TestUpdateFromObject(CustomResourceTestBase):
 
 
 class TestInitObject(CustomResourceTestBase):
+
     def test_non_parsed_field_dirty(self):
         resource = self.get_resource(self.obj)
 

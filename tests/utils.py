@@ -7,13 +7,15 @@ from pyhuelights.manager import BaseResourceManager, dict_parser
 
 
 class FakeResponse(object):
+
     def __init__(self, status_code, content):
         self.status_code = status_code
-        self.json = lambda : content
+        self.json = lambda: content
         self.text = content
 
 
 class FakeRequest(object):
+
     def __init__(self, responses):
         self.responses = responses
         self.requests = []
@@ -28,9 +30,7 @@ class FakeRequest(object):
 
 
 class SubSubResource(HueResource):
-    FIELDS = [
-        Field(obj_prop_name="test", validator=contains({1, 2, 3, 4, 5}))
-    ]
+    FIELDS = [Field(obj_prop_name="test", validator=contains({1, 2, 3, 4, 5}))]
 
     def relative_url(self):
         return self.parent.relative_url() + "/sub"
@@ -60,6 +60,7 @@ class CustomResource(HueResource):
 
 
 class CustomResourceManager(BaseResourceManager):
+
     def get(self):
         obj = self.make_request(relative_url="/res", method="get")
         return self.parse_response(obj, parser=dict_parser(CustomResource))
@@ -74,7 +75,9 @@ class CustomResourceTestBase(object):
         "f2": "hello",
         "field3": {
             "sub": "subval",
-            "sub2": {"test": 1}
+            "sub2": {
+                "test": 1
+            }
         }
     }
 
@@ -93,7 +96,9 @@ class RequestsTestsBase(object):
         "f2": "hello",
         "field3": {
             "sub": "subval",
-            "sub2": {"test": 1}
+            "sub2": {
+                "test": 1
+            }
         }
     }
 
