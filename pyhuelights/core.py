@@ -3,7 +3,7 @@
 import colorsys
 import math
 from dataclasses import dataclass, field
-from typing import Type, Callable
+from typing import Type, Callable, Any
 from collections.abc import Collection
 
 EMPTY = object()
@@ -19,10 +19,6 @@ def contains(params):
 
 def validate_xy(value):
     return isinstance(value, Collection) and len(value) == 2
-
-
-def validate_temp(value):
-    return 153 <= value <= 500
 
 
 def rgb_to_xy(r, g, b):
@@ -56,7 +52,7 @@ class Color:
         if xy and not validate_xy(xy):
             raise ValueError("Bad xy value.")
 
-        if temp and not validate_temp(temp):
+        if temp and not (2000 <= temp <= 6500):
             raise ValueError("Temperature should be between 2000 and 6500")
 
         if xy:
@@ -68,12 +64,8 @@ class Color:
         self.temperature = temp
 
     @staticmethod
-    def from_rgb(r, g, b):
-        return Color(xy=rgb_to_xy(r, g, b))
-
-    @staticmethod
-    def from_temperature(temp):
-        return Color(temp=int(1000000.0 / temp))
+    def from_kelvin(temp):
+        return Color(temp=temp)
 
     @staticmethod
     def from_hue_sat(hue, sat):
@@ -131,7 +123,9 @@ class Field(object):
     is_key: bool = False
     parse: bool = True
     optional: bool = False
-    validator: Callable[..., str] = None
+    validator: Callable[..., bool] = None
+    from_json_converter: Any = lambda x: x
+    to_json_converter: Any = lambda x: x
 
     def prop_name(self):
         return self.obj_prop_name
@@ -165,6 +159,8 @@ class Field(object):
             if field.validator and not field.validator(val):
                 raise ValueError(val)
 
+            # No conversion to val, because the caller provided value would be
+            # already converted. Converters are for JSON-parsing.
             self.data[field.prop_name()] = val
 
             # Walk up the hierarchy and set the dirty flags.
@@ -199,8 +195,9 @@ class Field(object):
             obj.dirty_flag[self.prop_name()] = False
             obj.data[self.prop_name()] = value
         elif self.json_name() in json:
-            obj.data[self.prop_name()] = json[self.json_name()]
-            obj.data[self.prop_name() + "_orig"] = json[self.json_name()]
+            val = self.from_json_converter(json[self.json_name()])
+            obj.data[self.prop_name()] = val
+            obj.data[self.prop_name() + "_orig"] = val
             obj.dirty_flag[self.prop_name()] = False
         elif self.optional and self.json_name() not in json:
             obj.data[self.prop_name()] = EMPTY
@@ -250,7 +247,10 @@ class LightState(HueResource):
               optional=True),
         Field(obj_prop_name="temperature",
               parse_json_name="ct",
-              validator=contains(range(153, 501)),
+              validator=contains(range(2000, 6501)),
+              from_json_converter=lambda x: max(2000,
+                                                min(int(1000000.0 / x), 6500)),
+              to_json_converter=lambda x: int(1000000.0 / x),
               optional=True),
         Field(obj_prop_name="xy",
               parse_json_name="xy",

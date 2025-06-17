@@ -24,15 +24,17 @@ def construct_body(obj):
         return None
 
     result = {}
-    for field, value in obj.dirty_flag.items():
-        if not value:
-            continue
-        field_value = getattr(obj, field)
-        if isinstance(field_value, HueResource):
-            transformed_value = construct_body(field_value)
-        else:
-            transformed_value = field_value
-        result[obj.property_to_json_key_map[field]] = transformed_value
+    for field in obj.FIELDS:
+        if obj.dirty_flag.get(field.prop_name(), False):
+            field_value = getattr(obj, field.prop_name())
+            if isinstance(field_value, HueResource):
+                transformed_value = construct_body(field_value)
+            else:
+                transformed_value = field.to_json_converter(field_value)
+
+            result[obj.property_to_json_key_map[
+                field.prop_name()]] = transformed_value
+
     return result
 
 
