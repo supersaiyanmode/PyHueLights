@@ -2,8 +2,8 @@ from copy import deepcopy
 
 import requests
 
-from pyhuelights.core import HueResource, Field, update_from_object, contains
-from pyhuelights.manager import BaseResourceManager, dict_parser
+from pyhuelights.model import HueResource, Field, update_from_object, contains
+from pyhuelights.network import BaseResourceManager, dict_parser
 
 
 class FakeResponse(object):

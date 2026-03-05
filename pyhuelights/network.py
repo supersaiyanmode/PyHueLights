@@ -1,8 +1,10 @@
+""" Contains network management logic. """
+
 import json
 import requests
 from requests_sse import EventSource
 
-from .core import HueResource, Light, Group, update_from_object
+from .model import HueResource, update_from_object
 from .exceptions import RequestFailed
 
 
@@ -74,14 +76,6 @@ class BaseResourceManager(object):
                                  body=construct_body(obj),
                                  **kwargs)
 
-
-class LightsManager(BaseResourceManager):
-
-    def get_all_lights(self):
-        """ Retrieves all lights from the bridge, and returns a dict."""
-        obj = self.make_request(relative_url="/lights", method="get")
-        return self.parse_response(obj, parser=dict_parser(Light))
-
     def get_resource(self, resource=None, resource_id=None, typ=None):
         """ Retrieves the latest state of the provided resource. """
         if resource:
@@ -98,35 +92,9 @@ class LightsManager(BaseResourceManager):
 
         raise ValueError("Expected one of resource or <resource_id, typ>")
 
-    def get_all_groups(self):
-        """ Retrieves all groups on the bridge."""
-        obj = self.make_request(relative_url='/groups', method='get')
-        return self.parse_response(obj, parser=dict_parser(Group))
-
-    def run_effect(self, light, effect):
-        """
-        Runs the change represented by effect on the given light instance.
-        """
-        if isinstance(light, Light):
-            light.reset()
-        else:
-            for l in light:
-                l.reset()
-
-        for state in effect.update_state(light):
-            res = self.make_resource_update_request(state)
-
     def iter_events(self):
         url = 'https://' + self.connection_info.host + '/eventstream/clip/v2'
         headers = {'hue-application-key': self.connection_info.username}
         with EventSource(url, headers=headers, verify=False) as events:
             for event in events:
-                for change in json.loads(event.data):
-                    for data in change["data"]:
-                        light_id = data.get("id_v1")
-                        if not light_id or not light_id.startswith("/lights"):
-                            continue
-
-                        yield self.get_resource(resource_id=light_id.replace(
-                            "/lights/", ""),
-                                                typ=Light)
+                yield from json.loads(event.data)

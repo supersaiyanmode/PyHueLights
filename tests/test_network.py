@@ -2,7 +2,7 @@ import pytest
 
 from pyhuelights.registration import AuthenticatedHueConnection
 from pyhuelights.exceptions import RequestFailed
-from pyhuelights.manager import construct_body, dict_parser
+from pyhuelights.network import construct_body, dict_parser
 
 from utils import CustomResourceTestBase, CustomResource, RequestsTestsBase
 from utils import CustomResourceManager, FakeResponse

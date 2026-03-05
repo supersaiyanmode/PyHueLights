@@ -1,6 +1,6 @@
 import pytest
 
-from pyhuelights.core import HueApp
+from pyhuelights.model import HueApp
 from pyhuelights.exceptions import RegistrationFailed
 from pyhuelights.registration import register, AuthenticatedHueConnection
 from pyhuelights.discovery import UnauthenticatedHueRawConnectionInfo as Raw
