@@ -213,20 +213,6 @@ class LightState(HueResource):
     def relative_url(self):
         return self.parent.relative_url() + "/state"
 
-    def set_color(self, color):
-        from .core import Color
-        if not isinstance(color, Color):
-            raise ValueError("Expected a Color instance.")
-
-        if color.color_mode == 'xy':
-            self.xy = color.xy
-        elif color.color_mode == 'ct':
-            self.temperature = color.temperature
-        else:
-            raise ValueError("Unsupported color mode.")
-
-        self.color_mode = color.color_mode
-
 
 class LightCapabilities(HueResource):
     """ Represents the capabilities of the light. """

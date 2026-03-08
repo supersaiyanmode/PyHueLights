@@ -1,8 +1,8 @@
 from copy import deepcopy
 import pytest
 
-from pyhuelights.model import EMPTY, update_from_object, Light
-from pyhuelights.core import Color
+from pyhuelights.model import EMPTY, update_from_object, Light as LightRaw
+from pyhuelights.core import Temperature
 from pyhuelights.network import construct_body
 
 from utils import CustomResourceTestBase, SubResource, SubSubResource
@@ -173,10 +173,10 @@ LIGHT_JSON = {
 }
 
 
-class TestLights:
+class TestLightRaw:
 
     def test_light_parse(self):
-        light = Light()
+        light = LightRaw()
         obj = deepcopy(LIGHT_JSON)
         obj["state"]["ct"] = 153
         update_from_object(light, "id", obj)
@@ -188,19 +188,21 @@ class TestLights:
         assert light.state.temperature == 2000
 
     def test_light_set_temperature_conversion(self):
-        light = Light()
-        update_from_object(light, "id", LIGHT_JSON)
+        from pyhuelights.core import Light
+        light_model = LightRaw()
+        update_from_object(light_model, "id", LIGHT_JSON)
+        light = Light(light_model)
 
-        light.state.set_color(Color.from_kelvin(2000))
-        assert construct_body(light) == {
+        light.color = Temperature(2000)
+        assert construct_body(light_model) == {
             'state': {
                 'colormode': 'ct',
                 'ct': 500
             }
         }
 
-        light.state.set_color(Color.from_kelvin(6500))
-        assert construct_body(light) == {
+        light.color = Temperature(6500)
+        assert construct_body(light_model) == {
             'state': {
                 'colormode': 'ct',
                 'ct': 153

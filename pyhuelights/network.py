@@ -1,6 +1,7 @@
 """ Contains network management logic. """
 
 import json
+from typing import Any, Callable, Dict, List, Type
 import requests
 from requests_sse import EventSource
 
@@ -8,9 +9,11 @@ from .model import HueResource, update_from_object
 from .exceptions import RequestFailed
 
 
-def dict_parser(cls):
+def dict_parser(
+    cls: Type[HueResource]
+) -> Callable[[Dict[str, Any]], Dict[str, HueResource]]:
 
-    def parser(response):
+    def parser(response: Dict[str, Any]) -> Dict[str, HueResource]:
         obj = {}
         for key, value in response.items():
             result = cls()
@@ -21,7 +24,7 @@ def dict_parser(cls):
     return parser
 
 
-def construct_body(obj):
+def construct_body(obj: HueResource | None) -> Dict[str, Any] | None:
     if obj is None:
         return None
 
@@ -43,14 +46,14 @@ def construct_body(obj):
 class BaseResourceManager(object):
     APIS = {}
 
-    def __init__(self, connection_info):
+    def __init__(self, connection_info: Any):
         self.connection_info = connection_info
 
-    def parse_response(self, obj, **kwargs):
+    def parse_response(self, obj: Any, **kwargs: Any) -> Any:
         parser = kwargs.pop('parser')
         return parser(obj)
 
-    def make_request(self, **kwargs):
+    def make_request(self, **kwargs: Any) -> Any:
         expected_status = kwargs.pop('expected_status', [200])
         relative_url = kwargs.pop('relative_url')
         method = kwargs.pop('method')
@@ -65,18 +68,26 @@ class BaseResourceManager(object):
             raise RequestFailed(response.status_code, response.text)
         return response.json()
 
-    def make_resource_get_request(self, obj, relative_url=None):
+    def make_resource_get_request(self,
+                                  obj: HueResource,
+                                  relative_url: str | None = None) -> Any:
         return self.make_request(method='get',
                                  relative_url=(relative_url
                                                or obj.relative_url()))
 
-    def make_resource_update_request(self, obj, method='put', **kwargs):
+    def make_resource_update_request(self,
+                                     obj: HueResource,
+                                     method: str = 'put',
+                                     **kwargs: Any) -> Any:
         return self.make_request(method=method,
                                  relative_url=obj.relative_url(),
                                  body=construct_body(obj),
                                  **kwargs)
 
-    def get_resource(self, resource=None, resource_id=None, typ=None):
+    def get_resource(self,
+                     resource: HueResource | None = None,
+                     resource_id: str | None = None,
+                     typ: Type[HueResource] | None = None) -> Any:
         """ Retrieves the latest state of the provided resource. """
         if resource:
             res = self.make_resource_get_request(resource)
@@ -84,15 +95,15 @@ class BaseResourceManager(object):
             update_from_object(resp, resource.id, res)
             return resp
         elif resource_id is not None and typ is not None:
-            resource = typ()
+            resource_obj = typ()
             res = self.make_resource_get_request(
-                resource, typ.make_relative_url(resource_id))
-            update_from_object(resource, resource_id, res)
-            return resource
+                resource_obj, typ.make_relative_url(resource_id))
+            update_from_object(resource_obj, resource_id, res)
+            return resource_obj
 
         raise ValueError("Expected one of resource or <resource_id, typ>")
 
-    def iter_events(self):
+    def iter_events(self) -> Any:
         url = 'https://' + self.connection_info.host + '/eventstream/clip/v2'
         headers = {'hue-application-key': self.connection_info.username}
         with EventSource(url, headers=headers, verify=False) as events:

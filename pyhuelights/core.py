@@ -1,136 +1,133 @@
-""" Contains Color class and LightsManager. """
-
+from typing import List, Dict, Optional, Generator, Tuple, Any
 import colorsys
-import math
-from .model import validate_xy, Light, Group, update_from_object
+
+from .model import validate_xy, Light as LightRaw, Group, update_from_object
 from .network import BaseResourceManager, dict_parser
+from .colorutils import rgb_to_xy, xy_to_rgb
 
 
-def rgb_to_xy(r, g, b):
-    # sRGB to XYZ (D65) transformation.
-    def enhance_color(normalized):
-        if normalized > 0.04045:
-            return math.pow((normalized + 0.055) / (1.0 + 0.055), 2.4)
+class Temperature:
+
+    def __init__(self, value: int):
+        if not (2000 <= value <= 6500):
+            raise ValueError("Temperature must be between 2000 and 6500")
+        self.value = value
+
+    def __repr__(self) -> str:
+        return f"Temperature({self.value})"
+
+
+class HueSat:
+
+    def __init__(self, hue: int, saturation: int):
+        if not (0 <= hue <= 65535):
+            raise ValueError("Hue must be between 0 and 65535")
+        if not (0 <= saturation <= 254):
+            raise ValueError("Saturation must be between 0 and 254")
+        self.hue = hue
+        self.saturation = saturation
+
+    def __repr__(self) -> str:
+        return f"HueSat(hue={self.hue}, saturation={self.saturation})"
+
+
+class RGB:
+
+    def __init__(self, r: int, g: int, b: int):
+        if not all(0 <= c <= 255 for c in (r, g, b)):
+            raise ValueError("RGB components must be between 0 and 255")
+        self.r = r
+        self.g = g
+        self.b = b
+
+    def __repr__(self) -> str:
+        return f"RGB({self.r}, {self.g}, {self.b})"
+
+
+Color = Temperature | HueSat | RGB
+
+
+class Light:
+    """ High-level abstraction over a Light model. """
+
+    def __init__(self, light_model: LightRaw):
+        self._model = light_model
+
+    @property
+    def color(self) -> Color:
+        state = self._model.state
+        if state.color_mode == 'xy':
+            r, g, b = xy_to_rgb(state.xy[0], state.xy[1], state.brightness
+                                or 254)
+            return RGB(r, g, b)
+        elif state.color_mode == 'ct':
+            return Temperature(state.temperature)
+        elif state.color_mode == 'hs':
+            return HueSat(state.hue, state.saturation)
+
+        raise ValueError(f"Unknown or unsupported color mode: {state.color_mode}")
+
+    @color.setter
+    def color(self, value: Color) -> None:
+        state = self._model.state
+        if isinstance(value, Temperature):
+            state.temperature = value.value
+            state.color_mode = 'ct'
+        elif isinstance(value, HueSat):
+            state.hue = value.hue
+            state.saturation = value.saturation
+            state.color_mode = 'hs'
+        elif isinstance(value, RGB):
+            state.xy = list(rgb_to_xy(value.r, value.g, value.b))
+            state.color_mode = 'xy'
         else:
-            return normalized / 12.92
+            raise ValueError("Expected Temperature, HueSat, or RGB instance.")
 
-    r_e = enhance_color(r / 255.0)
-    g_e = enhance_color(g / 255.0)
-    b_e = enhance_color(b / 255.0)
+    @property
+    def brightness(self) -> int | None:
+        return self._model.state.brightness
 
-    # Standard sRGB to XYZ matrix (D65).
-    X = r_e * 0.4124 + g_e * 0.3576 + b_e * 0.1805
-    Y = r_e * 0.2126 + g_e * 0.7152 + b_e * 0.0722
-    Z = r_e * 0.0193 + g_e * 0.1192 + b_e * 0.9505
-
-    if X + Y + Z == 0:
-        return 0.0, 0.0
-    else:
-        return X / (X + Y + Z), Y / (X + Y + Z)
-
-
-def xy_to_rgb(x, y, bri=255):
-    if bri == 0 or y == 0:
-        return 0, 0, 0
-
-    # XYZ from xyY coordinates.
-    Y = bri / 255.0
-    X = (Y / y) * x
-    Z = (Y / y) * (1.0 - x - y)
-
-    # XYZ to sRGB matrix (D65).
-    r = X * 3.2406 - Y * 1.5372 - Z * 0.4986
-    g = -X * 0.9689 + Y * 1.8758 + Z * 0.0415
-    b = X * 0.0557 - Y * 0.2040 + Z * 1.0570
-
-    # Inverse gamma correction.
-    def reverse_enhance_color(normalized):
-        if normalized <= 0.0031308:
-            return normalized * 12.92
-        else:
-            return (1.055 * math.pow(normalized, (1.0 / 2.4))) - 0.055
-
-    r = reverse_enhance_color(r)
-    g = reverse_enhance_color(g)
-    b = reverse_enhance_color(b)
-
-    # Scaling to handle out-of-gamut values.
-    max_val = max(r, g, b)
-    if max_val > 1.0:
-        r /= max_val
-        g /= max_val
-        b /= max_val
-
-    # Clip to [0, 1] before scaling to 0-255.
-    r = max(0, min(1, r))
-    g = max(0, min(1, g))
-    b = max(0, min(1, b))
-
-    return int(r * 255), int(g * 255), int(b * 255)
-
-
-class Color:
-
-    def __init__(self, temp=None, xy=None):
-        if not xy and not temp:
-            raise ValueError("One of temp or xy must be provided.")
-
-        if xy and not validate_xy(xy):
-            raise ValueError("Bad xy value.")
-
-        if temp and not (2000 <= temp <= 6500):
-            raise ValueError("Temperature should be between 2000 and 6500")
-
-        if xy:
-            self.color_mode = 'xy'
-        elif temp:
-            self.color_mode = 'ct'
-
-        self.xy = xy
-        self.temperature = temp
-
-    @staticmethod
-    def from_kelvin(temp):
-        return Color(temp=temp)
-
-    @staticmethod
-    def from_hue_sat(hue, sat):
-        return Color(xy=rgb_to_xy(*colorsys.hsv_to_rgb(hue / 360.0, sat /
-                                                       100.0, 1.0)))
+    @brightness.setter
+    def brightness(self, value: int) -> None:
+        self._model.state.brightness = value
 
 
 class LightsManager(BaseResourceManager):
 
-    def get_all_lights(self):
+    def get_all_lights(self) -> Dict[str, Light]:
         """ Retrieves all lights from the bridge, and returns a dict."""
         obj = self.make_request(relative_url="/lights", method="get")
-        return self.parse_response(obj, parser=dict_parser(Light))
+        raw_lights = self.parse_response(obj, parser=dict_parser(LightRaw))
+        return {k: Light(v) for k, v in raw_lights.items()}
 
-    def get_all_groups(self):
+    def get_all_groups(self) -> Dict[str, Group]:
         """ Retrieves all groups on the bridge."""
         obj = self.make_request(relative_url='/groups', method='get')
         return self.parse_response(obj, parser=dict_parser(Group))
 
-    def run_effect(self, light, effect):
+    def run_effect(self, light: Light | List[Light], effect: Any) -> None:
         """
-        Runs the change represented by effect on the given light instance.
+        Runs the change represented by effect on the given light instance(s).
         """
-        if isinstance(light, Light):
-            light.reset()
-        else:
-            for l in light:
-                l.reset()
+        lights = [light] if isinstance(light, (Light, LightRaw)) else light
 
-        for state in effect.update_state(light):
-            self.make_resource_update_request(state)
+        for l in lights:
+            if isinstance(l, LightRaw):
+                l = Light(l)
 
-    def iter_events(self):
+            l._model.reset()
+            for state in effect.update_state(l):
+                self.make_resource_update_request(state)
+
+    def iter_events(self) -> Generator[Light, None, None]:
+        """ Iterates over real-time events from the bridge. """
         for change in super().iter_events():
             for data in change["data"]:
                 light_id = data.get("id_v1")
                 if not light_id or not light_id.startswith("/lights"):
                     continue
 
-                yield self.get_resource(resource_id=light_id.replace(
+                raw_light = self.get_resource(resource_id=light_id.replace(
                     "/lights/", ""),
-                                        typ=Light)
+                                              typ=LightRaw)
+                yield Light(raw_light)
