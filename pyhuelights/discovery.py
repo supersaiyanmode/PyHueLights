@@ -5,7 +5,6 @@ Hue bridge on the current network.
 
 import socket
 import asyncio
-from typing import Any
 
 import httpx
 from zeroconf import ServiceBrowser, ServiceListener
@@ -16,15 +15,11 @@ from .exceptions import DiscoveryFailed
 
 class MDNSListener(ServiceListener):
 
-    def __init__(self, callback, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, callback):
         self.callback = callback
 
     def add_service(self, zc, typ, name) -> None:
-        asyncio.create_task(self._async_add_service(zc, typ, name))
-
-    async def _async_add_service(self, zc, typ, name) -> None:
-        info = await zc.async_get_service_info(typ, name)
+        info = zc.get_service_info(typ, name)
         self.callback(info)
 
     def remove_service(self, zc, type_, name) -> None:
@@ -44,11 +39,12 @@ class UnauthenticatedHueRawConnectionInfo(object):
         try:
             async with httpx.AsyncClient() as client:
                 resp = await client.get("http://{}/description.xml".format(
-                    self.host))
+                    self.host),
+                                        timeout=5.0)
                 if resp.status_code != 200:
                     return False
                 return "Philips" in resp.text
-        except httpx.RequestError:
+        except (httpx.RequestError, httpx.TimeoutException):
             return False
 
 
@@ -68,7 +64,6 @@ class BaseDiscovery(object):
         return connection_info
 
     async def discover_host(self):
-        """ Needs to be overridden according to different discovery methods. """
         raise NotImplementedError
 
     def discovery_finished(self, connection_info):
@@ -86,7 +81,7 @@ class NUPNPDiscovery(BaseDiscovery):
     async def discover_host(self):
         try:
             async with httpx.AsyncClient() as client:
-                resp = await client.get(self.NUPNP_URL)
+                resp = await client.get(self.NUPNP_URL, timeout=10.0)
                 obj = resp.json()
         except (httpx.RequestError, ValueError):
             raise DiscoveryFailed
@@ -116,11 +111,12 @@ class MDNSDiscovery(BaseDiscovery):
     async def discover_host(self):
         devices = []
         event = asyncio.Event()
+        loop = asyncio.get_running_loop()
 
         def on_device_found(x):
             if x:
                 devices.append(x)
-                event.set()
+                loop.call_soon_threadsafe(event.set)
 
         aio_zc = AsyncZeroconf()
         listener = MDNSListener(on_device_found)
@@ -131,6 +127,7 @@ class MDNSDiscovery(BaseDiscovery):
         except asyncio.TimeoutError:
             pass
         finally:
+            browser.cancel()
             await aio_zc.async_close()
 
         if not devices:
@@ -146,7 +143,6 @@ class DefaultDiscovery(object):
     METHODS = [MDNSDiscovery, StaticHostDiscovery, NUPNPDiscovery]
 
     async def discover(self):
-        """ Tries all the discovery methods in self.METHODS. """
         for cls in self.METHODS:
             method = cls()
             try:
