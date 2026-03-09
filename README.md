@@ -1,22 +1,60 @@
-#### This README is a work in progress.
+# PyHueLights
 
-# Highlight [![Build Status](https://travis-ci.org/supersaiyanmode/PyHueLights.svg?branch=master)](https://travis-ci.org/supersaiyanmode/PyHueLights)[![Coverage Status](https://coveralls.io/repos/github/supersaiyanmode/PyHueLights/badge.svg)](https://coveralls.io/github/supersaiyanmode/PyHueLights)
-(Yet another) Philips Hue SDK (Python).
+(Yet another) Philips Hue SDK for Python 3.10+.
 
+## Features
 
-## Sample Code
+- Full Async Support**:
+- High-level Abstractions: Simple `Light` and `Color` models (`RGB`, `Temperature`, `HueSat`).
+- SSE Event Streaming: Real-time updates from your Bridge.
+- *obust Discovery: Supports mDNS, NUPNP discoveries.
 
-    from pyhuelights.discovery import DefaultDiscovery
-    from pyhuelights.core import *
-    from pyhuelights.manager import *
-    from pyhuelights.animations import *
-    from pyhuelights.registration import *
-    
-    store = {}
-    conn = DefaultDiscovery().discover()
-    conn = register(conn, HueApp("test", ""), store)   # Remember to push the button on the hub within
-                                                       # the last 30 sec of executing this line.
-    
-    lm = LightsManager(conn)
-    lights = lm.get_all_lights()
-    lm.run_effect(lights['1'], ColorLoopEffect())
+## Installation
+
+```bash
+pip install git+https://github.com/supersaiyanmode/pyhuelights.git@master
+```
+
+## Quick Start
+
+```python
+import asyncio
+from pyhuelights import DefaultDiscovery, LightsManager
+from pyhuelights.core import RGB, Temperature
+from pyhuelights.model import HueApp
+from pyhuelights.registration import register
+from pyhuelights.animations import SetLightStateEffect
+
+async def main():
+    # 1. Discover the bridge
+    conn = await DefaultDiscovery().discover()
+
+    # 2. Register (Press the link button on the bridge first!)
+    store = {}  # Or a dict-like object.
+    auth_conn = await register(conn, HueApp("my_app", "my_device"), store)
+
+    # 3. Manage Lights
+    manager = LightsManager(auth_conn)
+    lights = await manager.get_all_lights()
+
+    my_light = lights['1']
+
+    await manager.run_effect(my_light,
+                             SetLightStateEffect(on=True, color=RGB(255, 0, 0))
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+## SSE Events
+
+Listen to real-time events from the bridge:
+
+```python
+async for light in manager.iter_events():
+    print(f"Light {light._model.id} changed! New color: {light.color}")
+```
+
+## License
+
+MIT
