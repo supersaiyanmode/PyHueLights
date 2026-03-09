@@ -1,4 +1,4 @@
-from typing import List, Dict, Optional, Generator, Tuple, Any
+from typing import List, Dict, Generator, Tuple, Any, AsyncGenerator
 import colorsys
 
 from .model import validate_xy, Light as LightRaw, Group, update_from_object
@@ -65,7 +65,8 @@ class Light:
         elif state.color_mode == 'hs':
             return HueSat(state.hue, state.saturation)
 
-        raise ValueError(f"Unknown or unsupported color mode: {state.color_mode}")
+        raise ValueError(
+            f"Unknown or unsupported color mode: {state.color_mode}")
 
     @color.setter
     def color(self, value: Color) -> None:
@@ -94,18 +95,19 @@ class Light:
 
 class LightsManager(BaseResourceManager):
 
-    def get_all_lights(self) -> Dict[str, Light]:
+    async def get_all_lights(self) -> Dict[str, Light]:
         """ Retrieves all lights from the bridge, and returns a dict."""
-        obj = self.make_request(relative_url="/lights", method="get")
+        obj = await self.make_request(relative_url="/lights", method="get")
         raw_lights = self.parse_response(obj, parser=dict_parser(LightRaw))
         return {k: Light(v) for k, v in raw_lights.items()}
 
-    def get_all_groups(self) -> Dict[str, Group]:
+    async def get_all_groups(self) -> Dict[str, Group]:
         """ Retrieves all groups on the bridge."""
-        obj = self.make_request(relative_url='/groups', method='get')
+        obj = await self.make_request(relative_url='/groups', method='get')
         return self.parse_response(obj, parser=dict_parser(Group))
 
-    def run_effect(self, light: Light | List[Light], effect: Any) -> None:
+    async def run_effect(self, light: Light | List[Light],
+                         effect: Any) -> None:
         """
         Runs the change represented by effect on the given light instance(s).
         """
@@ -116,18 +118,17 @@ class LightsManager(BaseResourceManager):
                 l = Light(l)
 
             l._model.reset()
-            for state in effect.update_state(l):
-                self.make_resource_update_request(state)
+            async for state in effect.update_state(l):
+                await self.make_resource_update_request(state)
 
-    def iter_events(self) -> Generator[Light, None, None]:
+    async def iter_events(self) -> AsyncGenerator[Light, None]:
         """ Iterates over real-time events from the bridge. """
-        for change in super().iter_events():
+        async for change in super().iter_events():
             for data in change["data"]:
                 light_id = data.get("id_v1")
                 if not light_id or not light_id.startswith("/lights"):
                     continue
 
-                raw_light = self.get_resource(resource_id=light_id.replace(
-                    "/lights/", ""),
-                                              typ=LightRaw)
+                raw_light = await self.get_resource(
+                    resource_id=light_id.replace("/lights/", ""), typ=LightRaw)
                 yield Light(raw_light)

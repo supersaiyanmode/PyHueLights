@@ -1,42 +1,51 @@
 import pytest
+import respx
+from httpx import Response
 
 from pyhuelights.model import HueApp
 from pyhuelights.exceptions import RegistrationFailed
-from pyhuelights.registration import register, AuthenticatedHueConnection
+from pyhuelights.registration import register
 from pyhuelights.discovery import UnauthenticatedHueRawConnectionInfo as Raw
 
-from utils import RequestsTestsBase, FakeResponse
 
+class TestRegistration:
 
-class TestRegistration(RequestsTestsBase):
-    def test_username_in_store(self):
+    @pytest.mark.asyncio
+    async def test_username_in_store(self):
         store = {"username": "test"}
-        assert register(Raw(""), None, store).username == "test"
+        res = await register(Raw(""), None, store)
+        assert res.username == "test"
 
-    def test_registration_timeout(self):
-        self.fake_request.responses = [FakeResponse(200, {})] * 30
-        with pytest.raises(RegistrationFailed):
-            register(Raw(""), HueApp("", ""), {}, 5)
-
-    def test_bad_response(self):
-        self.fake_request.responses = [FakeResponse(500, {})]
-
-        with pytest.raises(RegistrationFailed):
-            register(Raw(""), HueApp("", ""), {}, 30)
-
-    def test_unexpected_response(self):
-        self.fake_request.responses = [FakeResponse(200, {})] * 3
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_registration_timeout(self):
+        respx.post("http://host/api").mock(
+            return_value=Response(200, json=[{}]))
 
         with pytest.raises(RegistrationFailed):
-            register(Raw(""), HueApp("", ""), {}, 2)
+            await register(Raw("host"), HueApp("app", "client"), {}, 0.1)
 
-    def test_sucessful_registration(self):
-        self.fake_request.responses = [
-            FakeResponse(200, {}),
-            FakeResponse(200, {}),
-            FakeResponse(200, [{"success": {"username": "abc"}}])
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_bad_response(self):
+        respx.post("http://host/api").mock(return_value=Response(500))
+
+        with pytest.raises(RegistrationFailed):
+            await register(Raw("host"), HueApp("app", "client"), {}, 30)
+
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_sucessful_registration(self):
+        respx.post("http://host/api").side_effect = [
+            Response(200, json=[{}]),
+            Response(200, json=[{
+                "success": {
+                    "username": "abc"
+                }
+            }])
         ]
 
         store = {}
-        assert register(Raw(""), HueApp("", ""), store).username == "abc"
+        res = await register(Raw("host"), HueApp("app", "client"), store)
+        assert res.username == "abc"
         assert store == {"username": "abc"}

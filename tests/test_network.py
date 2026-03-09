@@ -1,14 +1,18 @@
+import json
 import pytest
+import respx
+from httpx import Response
 
 from pyhuelights.registration import AuthenticatedHueConnection
 from pyhuelights.exceptions import RequestFailed
 from pyhuelights.network import construct_body, dict_parser
 
-from utils import CustomResourceTestBase, CustomResource, RequestsTestsBase
-from utils import CustomResourceManager, FakeResponse
+from utils import CustomResourceTestBase, CustomResource
+from utils import CustomResourceManager
 
 
 class TestDictParser(CustomResourceTestBase):
+
     def test_parse(self):
         parser = dict_parser(CustomResource)
         res = parser({"1": self.obj})
@@ -18,17 +22,14 @@ class TestDictParser(CustomResourceTestBase):
 
 
 class TestConstructBody(CustomResourceTestBase):
+
     def test_construct_body(self):
         resource = self.get_resource(self.obj)
 
         resource.field3.sub2.test = 5
 
         res = construct_body(resource)
-        expected = {
-            "field3": {
-                "sub2": {"test": 5}
-            }
-        }
+        expected = {"field3": {"sub2": {"test": 5}}}
 
         assert res == expected
 
@@ -36,61 +37,67 @@ class TestConstructBody(CustomResourceTestBase):
         assert construct_body(None) is None
 
 
-class TestBaseResourceManager(RequestsTestsBase):
-    def test_invalid_api(self):
+class TestBaseResourceManager(CustomResourceTestBase):
+
+    @pytest.mark.asyncio
+    async def test_invalid_api(self):
         conn = AuthenticatedHueConnection("", "")
         rm = CustomResourceManager(conn)
 
         with pytest.raises(AttributeError):
             rm.invalid_api()
 
-    def test_simple_api(self):
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_simple_api(self):
         mock_response = {"1": self.DEFAULT_OBJ}
-        self.fake_request.responses = [
-            FakeResponse(200, mock_response)
-        ]
+        respx.get("http://host/api/user/res").mock(
+            return_value=Response(200, json=mock_response))
+
         conn = AuthenticatedHueConnection("host", "user")
         rm = CustomResourceManager(conn)
 
-        resp = rm.get()
+        resp = await rm.get()
 
         assert isinstance(resp["1"], CustomResource)
-        assert len(self.fake_request.requests) == 1
-        assert self.fake_request.requests == [
-            ("http://host/api/user/res", None)
-        ]
 
-    def test_unexpected_response_status(self):
-        self.fake_request.responses = [
-            FakeResponse(500, {})
-        ]
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_unexpected_response_status(self):
+        respx.get("http://host/api/user/res").mock(return_value=Response(500))
+
         conn = AuthenticatedHueConnection("host", "user")
         rm = CustomResourceManager(conn)
 
         with pytest.raises(RequestFailed):
-            rm.get()
+            await rm.get()
 
-    def test_simple_update(self):
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_simple_update(self):
         mock_response = {"1": self.DEFAULT_OBJ}
-        self.fake_request.responses = [
-            FakeResponse(200, mock_response),
-            FakeResponse(200, {})
-        ]
+        respx.get("http://host/api/user/res").mock(
+            return_value=Response(200, json=mock_response))
+        update_route = respx.put("http://host/api/user/parent/1").mock(
+            return_value=Response(200, json={}))
+
         conn = AuthenticatedHueConnection("host", "user")
         rm = CustomResourceManager(conn)
 
-        res = rm.get()['1']
+        resp = await rm.get()
+        res = resp['1']
 
         res.field2 = "world"
         res.field3.sub2.test = 5
 
-        rm.put(res)
+        await rm.put(res)
 
-        assert len(self.fake_request.requests) == 2
-        assert self.fake_request.requests[1] == \
-            ("http://host/api/user/parent/1", {
-                "f2": "world",
-                "field3": {
-                    "sub2": {"test": 5}
+        assert update_route.called
+        assert json.loads(update_route.calls.last.request.content) == {
+            "f2": "world",
+            "field3": {
+                "sub2": {
+                    "test": 5
                 }
-            })
+            }
+        }

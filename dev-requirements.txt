@@ -1,4 +1,5 @@
 pytest
-requests-mock
+respx
 coveralls
 pylint
+pytest-asyncio

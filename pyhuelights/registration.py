@@ -1,9 +1,11 @@
 """ Contains classes to help with register with Philips Hue Bridge. """
 
 import time
-from threading import Thread, Event
+import asyncio
+import inspect
+from typing import Any, Callable
 
-import requests
+import httpx
 
 from .exceptions import RegistrationFailed
 
@@ -21,49 +23,54 @@ class AuthenticatedHueConnection():
 
 
 class RegistrationWatcher(object):
-    def __init__(self, host, app_name, timeout, callback=None):
+    def __init__(self, host: str, app_name: str, timeout: float,
+                 callback: Callable[[], Any] | None = None):
         self.url = "http://{}/api".format(host)
         self.app_name = app_name
         self.timeout = timeout
-        self.thread = Thread(target=self.run)
         self.status = None
         self.username = None
-        self.event = Event()
+        self.event = asyncio.Event()
+        self.callback = callback or self.event.set
 
-        self.callback = self.event.set if callback is None else callback
-
-    def run(self):
+    async def run(self):
         started = time.time()
-        while time.time() - started < self.timeout:
-            self.status = REGISTRATION_REQUESTED
-            resp = requests.post(self.url, json={"devicetype": self.app_name})
-            if resp.status_code != 200:
-                self.status = REGISTRATION_FAILED
-                break
+        async with httpx.AsyncClient() as client:
+            while time.time() - started < self.timeout:
+                self.status = REGISTRATION_REQUESTED
+                try:
+                    resp = await client.post(self.url, json={"devicetype": self.app_name})
+                    if resp.status_code != 200:
+                        self.status = REGISTRATION_FAILED
+                        break
 
-            try:
-                username = resp.json()[0]["success"]["username"]
-                self.username = username
-                self.status = REGISTRATION_SUCCEEDED
-                break
-            except (IOError, IndexError, KeyError):
-                pass
+                    data = resp.json()
+                    if isinstance(data, list) and "success" in data[0]:
+                        self.username = data[0]["success"]["username"]
+                        self.status = REGISTRATION_SUCCEEDED
+                        break
+                except (httpx.RequestError, IOError, IndexError, KeyError, ValueError):
+                    pass
 
-            time.sleep(1)
+                await asyncio.sleep(1)
 
         if self.status == REGISTRATION_REQUESTED:
             self.status = REGISTRATION_FAILED
 
-        self.callback()
+        if inspect.iscoroutinefunction(self.callback):
+            await self.callback()
+        else:
+            self.callback()
 
     def start(self):
-        self.thread.start()
+        asyncio.create_task(self.run())
 
-    def wait(self):
-        self.event.wait()
+    async def wait(self):
+        await self.event.wait()
 
 
-def register(unauthenticated_connection, app, store, timeout=30.0):
+async def register(unauthenticated_connection: Any, app: Any, store: dict,
+                   timeout: float = 30.0) -> AuthenticatedHueConnection:
     """
     Looks into the store to check for previous registration. If absent, go ahead
     with new registration.
@@ -76,7 +83,7 @@ def register(unauthenticated_connection, app, store, timeout=30.0):
     watcher = RegistrationWatcher(unauthenticated_connection.host, app_name,
                                   timeout)
     watcher.start()
-    watcher.wait()
+    await watcher.wait()
 
     if watcher.status == REGISTRATION_SUCCEEDED:
         store["username"] = watcher.username

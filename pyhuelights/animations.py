@@ -1,10 +1,11 @@
 import time
-from typing import Generator, Any
+import asyncio
+from typing import Any, AsyncGenerator
 
 from pyhuelights.core import Color, Light
 
 
-def linear_transition(start, end, steps):
+async def linear_transition(start, end, steps) -> AsyncGenerator[Any, None]:
     if steps < 1:
         raise ValueError("No of steps need to be at least 1.")
 
@@ -18,22 +19,12 @@ def linear_transition(start, end, steps):
     yield end
 
 
-def quadratic_transition(start, end, steps, a=1):
-    shift = start
-    start = [x - y for x, y in zip(start, shift)]
-    end = [x - y for x, y in zip(end, shift)]
-
-    cur = start
-    for _ in range(steps):
-        pass
-
-
 class ColorLoopEffect:
 
     def __init__(self, transition_time: int | None = None):
         self.transition_time = transition_time
 
-    def update_state(self, light: Light) -> Generator[Any, None, None]:
+    async def update_state(self, light: Light) -> AsyncGenerator[Any, None]:
         if self.transition_time is not None:
             light._model.state.transition_time = self.transition_time
 
@@ -44,7 +35,7 @@ class ColorLoopEffect:
         if self.transition_time is not None:
             sleep_time = self.transition_time - (time.time() - start_time)
             if sleep_time > 0:
-                time.sleep(sleep_time)
+                await asyncio.sleep(sleep_time)
 
         light._model.state.effect = "none"
         yield light._model.state
@@ -62,7 +53,7 @@ class SetLightStateEffect:
         self.brightness = brightness
         self.transition_time = transition_time
 
-    def update_state(self, light: Light) -> Generator[Any, None, None]:
+    async def update_state(self, light: Light) -> AsyncGenerator[Any, None]:
         if self.transition_time is not None:
             light._model.state.transition_time = self.transition_time
 
@@ -94,12 +85,13 @@ class RotateEffect:
         self.transition_time = transition_time
         self.effects = [SetLightStateEffect(True, x, 100) for x in colors]
 
-    def update_state(self, light: Light) -> Generator[Any, None, None]:
+    async def update_state(self, light: Light) -> AsyncGenerator[Any, None]:
         len_effects = len(self.effects)
         start_time = time.time()
         iteration = -1
         while time.time() - start_time <= self.transition_time:
             iteration += 1
             effect_index = iteration % len_effects
-            yield from self.effects[effect_index].update_state(light)
-            time.sleep(0.1)
+            async for state in self.effects[effect_index].update_state(light):
+                yield state
+            await asyncio.sleep(0.1)

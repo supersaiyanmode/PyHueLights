@@ -1,9 +1,9 @@
 """ Contains network management logic. """
 
 import json
-from typing import Any, Callable, Dict, List, Type
-import requests
-from requests_sse import EventSource
+from typing import Any, Callable, Dict, Type, AsyncGenerator
+import httpx
+from httpx_sse import aconnect_sse
 
 from .model import HueResource, update_from_object
 from .exceptions import RequestFailed
@@ -46,14 +46,22 @@ def construct_body(obj: HueResource | None) -> Dict[str, Any] | None:
 class BaseResourceManager(object):
     APIS = {}
 
-    def __init__(self, connection_info: Any):
+    def __init__(self,
+                 connection_info: Any,
+                 client: httpx.AsyncClient | None = None):
         self.connection_info = connection_info
+        self._client = client
+
+    async def get_client(self) -> httpx.AsyncClient:
+        if self._client is None:
+            self._client = httpx.AsyncClient()
+        return self._client
 
     def parse_response(self, obj: Any, **kwargs: Any) -> Any:
         parser = kwargs.pop('parser')
         return parser(obj)
 
-    def make_request(self, **kwargs: Any) -> Any:
+    async def make_request(self, **kwargs: Any) -> Any:
         expected_status = kwargs.pop('expected_status', [200])
         relative_url = kwargs.pop('relative_url')
         method = kwargs.pop('method')
@@ -62,50 +70,58 @@ class BaseResourceManager(object):
         url = "http://{}/api/{}{}".format(self.connection_info.host,
                                           self.connection_info.username,
                                           relative_url)
-        response = getattr(requests, method)(url, json=body)
+        client = await self.get_client()
+        response = await client.request(method, url, json=body)
 
         if response.status_code not in expected_status:
             raise RequestFailed(response.status_code, response.text)
         return response.json()
 
-    def make_resource_get_request(self,
-                                  obj: HueResource,
-                                  relative_url: str | None = None) -> Any:
-        return self.make_request(method='get',
-                                 relative_url=(relative_url
-                                               or obj.relative_url()))
+    async def make_resource_get_request(self,
+                                        obj: HueResource,
+                                        relative_url: str | None = None
+                                        ) -> Any:
+        return await self.make_request(method='get',
+                                       relative_url=(relative_url
+                                                     or obj.relative_url()))
 
-    def make_resource_update_request(self,
-                                     obj: HueResource,
-                                     method: str = 'put',
-                                     **kwargs: Any) -> Any:
-        return self.make_request(method=method,
-                                 relative_url=obj.relative_url(),
-                                 body=construct_body(obj),
-                                 **kwargs)
+    async def make_resource_update_request(self,
+                                           obj: HueResource,
+                                           method: str = 'put',
+                                           **kwargs: Any) -> Any:
+        return await self.make_request(method=method,
+                                       relative_url=obj.relative_url(),
+                                       body=construct_body(obj),
+                                       **kwargs)
 
-    def get_resource(self,
-                     resource: HueResource | None = None,
-                     resource_id: str | None = None,
-                     typ: Type[HueResource] | None = None) -> Any:
+    async def get_resource(self,
+                           resource: HueResource | None = None,
+                           resource_id: str | None = None,
+                           typ: Type[HueResource] | None = None) -> Any:
         """ Retrieves the latest state of the provided resource. """
         if resource:
-            res = self.make_resource_get_request(resource)
+            res = await self.make_resource_get_request(resource)
             resp = resource.__class__()
             update_from_object(resp, resource.id, res)
             return resp
         elif resource_id is not None and typ is not None:
             resource_obj = typ()
-            res = self.make_resource_get_request(
+            res = await self.make_resource_get_request(
                 resource_obj, typ.make_relative_url(resource_id))
             update_from_object(resource_obj, resource_id, res)
             return resource_obj
 
         raise ValueError("Expected one of resource or <resource_id, typ>")
 
-    def iter_events(self) -> Any:
+    async def iter_events(self) -> AsyncGenerator[Dict[str, Any], None]:
         url = 'https://' + self.connection_info.host + '/eventstream/clip/v2'
         headers = {'hue-application-key': self.connection_info.username}
-        with EventSource(url, headers=headers, verify=False) as events:
-            for event in events:
-                yield from json.loads(event.data)
+        client = await self.get_client()
+        async with aconnect_sse(client,
+                                "GET",
+                                url,
+                                headers=headers,
+                                verify=False) as event_source:
+            async for event in event_source.aiter_sse():
+                for change in json.loads(event.data):
+                    yield change
