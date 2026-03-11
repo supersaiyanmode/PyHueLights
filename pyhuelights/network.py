@@ -54,7 +54,7 @@ class BaseResourceManager(object):
 
     async def get_client(self) -> httpx.AsyncClient:
         if self._client is None:
-            self._client = httpx.AsyncClient()
+            self._client = httpx.AsyncClient(verify=False)
         return self._client
 
     def parse_response(self, obj: Any, **kwargs: Any) -> Any:
@@ -117,11 +117,8 @@ class BaseResourceManager(object):
         url = 'https://' + self.connection_info.host + '/eventstream/clip/v2'
         headers = {'hue-application-key': self.connection_info.username}
         client = await self.get_client()
-        async with aconnect_sse(client,
-                                "GET",
-                                url,
-                                headers=headers,
-                                verify=False) as event_source:
+        async with aconnect_sse(client, "GET", url,
+                                headers=headers) as event_source:
             async for event in event_source.aiter_sse():
                 for change in json.loads(event.data):
                     yield change
