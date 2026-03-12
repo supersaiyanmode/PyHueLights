@@ -116,7 +116,7 @@ class BaseResourceManager(object):
     async def iter_events(self) -> AsyncGenerator[Dict[str, Any], None]:
         url = 'https://' + self.connection_info.host + '/eventstream/clip/v2'
         headers = {'hue-application-key': self.connection_info.username}
-        client = await self.get_client()
+        client = httpx.AsyncClient(verify=False, timeout=None)
         async with aconnect_sse(client, "GET", url,
                                 headers=headers) as event_source:
             async for event in event_source.aiter_sse():
