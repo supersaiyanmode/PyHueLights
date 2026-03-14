@@ -1,9 +1,24 @@
 from typing import List, Dict, Generator, Tuple, Any, AsyncGenerator
+from dataclasses import dataclass
 import colorsys
 
 from .model import validate_xy, Light as LightRaw, Group, update_from_object
 from .network import BaseResourceManager, dict_parser
 from .colorutils import rgb_to_xy, xy_to_rgb
+
+
+@dataclass(frozen=True)
+class LightMetadata:
+    type: str
+    model_id: str
+    software_version: str
+    name: str
+
+
+@dataclass(frozen=True)
+class LightCapabilities:
+    control: Any
+    streaming: Any
 
 
 class Temperature:
@@ -52,6 +67,26 @@ class Light:
 
     def __init__(self, light_model: LightRaw):
         self._model = light_model
+
+    @property
+    def id(self) -> str:
+        return self._model.unique_id
+
+    @property
+    def metadata(self) -> LightMetadata:
+        return LightMetadata(
+            type=self._model.type,
+            model_id=self._model.model_id,
+            software_version=self._model.software_version,
+            name=self._model.name
+        )
+
+    @property
+    def capabilities(self) -> LightCapabilities:
+        return LightCapabilities(
+            control=self._model.capabilities.control,
+            streaming=self._model.capabilities.streaming
+        )
 
     @property
     def color(self) -> Color:
