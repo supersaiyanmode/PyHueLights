@@ -227,15 +227,6 @@ class LightCapabilities(HueResource):
               optional=True)
     ]
 
-    def supported_color_modes(self):
-        res = []
-        if "colorgamut" in self.control:
-            res.append("hs")
-        if "ct" in self.control:
-            res.append("temp")
-
-        return res
-
 
 class Light(HueResource):
     FIELDS = [

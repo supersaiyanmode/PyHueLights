@@ -1,4 +1,4 @@
-from typing import List, Dict, Generator, Tuple, Any, AsyncGenerator
+from typing import List, Dict, Generator, Tuple, Any, AsyncGenerator, Type
 from dataclasses import dataclass
 import colorsys
 
@@ -13,12 +13,6 @@ class LightMetadata:
     model_id: str
     software_version: str
     name: str
-
-
-@dataclass(frozen=True)
-class LightCapabilities:
-    control: Any
-    streaming: Any
 
 
 class Temperature:
@@ -62,6 +56,13 @@ class RGB:
 Color = Temperature | HueSat | RGB
 
 
+@dataclass(frozen=True)
+class LightCapabilities:
+    control: Any
+    streaming: Any
+    supported_color_models: List[Type[Color]]
+
+
 class Light:
     """ High-level abstraction over a Light model. """
 
@@ -83,9 +84,17 @@ class Light:
 
     @property
     def capabilities(self) -> LightCapabilities:
+        control = self._model.capabilities.control
+        models: List[Type[Color]] = []
+        if "colorgamut" in control:
+            models.extend([RGB, HueSat])
+        if "ct" in control:
+            models.append(Temperature)
+
         return LightCapabilities(
-            control=self._model.capabilities.control,
-            streaming=self._model.capabilities.streaming
+            control=control,
+            streaming=self._model.capabilities.streaming,
+            supported_color_models=models
         )
 
     @property
