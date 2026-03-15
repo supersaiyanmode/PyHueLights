@@ -9,7 +9,6 @@ import httpx
 
 from .exceptions import RegistrationFailed
 
-
 REGISTRATION_REQUESTED = 1
 REGISTRATION_SUCCEEDED = 2
 REGISTRATION_FAILED = 3
@@ -17,13 +16,18 @@ REGISTRATION_FAILED = 3
 
 class AuthenticatedHueConnection():
     """ Represents a Hue connection with valid username. """
+
     def __init__(self, host, username):
         self.host = host
         self.username = username
 
 
 class RegistrationWatcher(object):
-    def __init__(self, host: str, app_name: str, timeout: float,
+
+    def __init__(self,
+                 host: str,
+                 app_name: str,
+                 timeout: float,
                  callback: Callable[[], Any] | None = None):
         self.url = "http://{}/api".format(host)
         self.app_name = app_name
@@ -39,7 +43,8 @@ class RegistrationWatcher(object):
             while time.time() - started < self.timeout:
                 self.status = REGISTRATION_REQUESTED
                 try:
-                    resp = await client.post(self.url, json={"devicetype": self.app_name})
+                    resp = await client.post(
+                        self.url, json={"devicetype": self.app_name})
                     if resp.status_code != 200:
                         self.status = REGISTRATION_FAILED
                         break
@@ -49,7 +54,8 @@ class RegistrationWatcher(object):
                         self.username = data[0]["success"]["username"]
                         self.status = REGISTRATION_SUCCEEDED
                         break
-                except (httpx.RequestError, IOError, IndexError, KeyError, ValueError):
+                except (httpx.RequestError, IOError, IndexError, KeyError,
+                        ValueError):
                     pass
 
                 await asyncio.sleep(1)
@@ -69,7 +75,9 @@ class RegistrationWatcher(object):
         await self.event.wait()
 
 
-async def register(unauthenticated_connection: Any, app: Any, store: dict,
+async def register(unauthenticated_connection: Any,
+                   app: Any,
+                   store: dict,
                    timeout: float = 30.0) -> AuthenticatedHueConnection:
     """
     Looks into the store to check for previous registration. If absent, go ahead

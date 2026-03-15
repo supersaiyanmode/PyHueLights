@@ -78,31 +78,31 @@ async def test_lights_abstraction():
 def test_rgb_to_xy_to_rgb():
     # Test a broad range of colors to ensure accuracy of transformations.
     colors = [
-        (255, 0, 0),    # Pure Red
-        (0, 255, 0),    # Pure Green
-        (0, 0, 255),    # Pure Blue
-        (255, 255, 255), # Pure White
-        (128, 128, 128), # Mid Grey
+        (255, 0, 0),  # Pure Red
+        (0, 255, 0),  # Pure Green
+        (0, 0, 255),  # Pure Blue
+        (255, 255, 255),  # Pure White
+        (128, 128, 128),  # Mid Grey
         (255, 255, 0),  # Yellow
         (0, 255, 255),  # Cyan
         (255, 0, 255),  # Magenta
         (255, 165, 0),  # Orange
         (128, 0, 128),  # Purple
-        (255, 192, 203), # Pink
+        (255, 192, 203),  # Pink
         (165, 42, 42),  # Brown
         (0, 128, 128),  # Teal
         (128, 128, 0),  # Olive
-        (0, 0, 128),    # Navy
-        (250, 235, 215), # Antique White
-        (230, 230, 250), # Lavender
-        (245, 245, 220), # Beige
+        (0, 0, 128),  # Navy
+        (250, 235, 215),  # Antique White
+        (230, 230, 250),  # Lavender
+        (245, 245, 220),  # Beige
         (0, 255, 127),  # Spring Green
-        (75, 0, 130),   # Indigo
+        (75, 0, 130),  # Indigo
         (255, 127, 80),  # Coral
-        (64, 224, 208), # Turquoise
-        (218, 165, 32), # Goldenrod
-        (47, 79, 79),   # Dark Slate Grey
-        (255, 250, 205), # Lemon Chiffon
+        (64, 224, 208),  # Turquoise
+        (218, 165, 32),  # Goldenrod
+        (47, 79, 79),  # Dark Slate Grey
+        (255, 250, 205),  # Lemon Chiffon
     ]
 
     for r, g, b in colors:
@@ -111,7 +111,7 @@ def test_rgb_to_xy_to_rgb():
         # Calculate Y for the roundtrip based on core.py's sRGB to XYZ matrix.
         def enhance_color(normalized):
             if normalized > 0.04045:
-                return ((normalized + 0.055) / (1.0 + 0.055)) ** 2.4
+                return ((normalized + 0.055) / (1.0 + 0.055))**2.4
             else:
                 return normalized / 12.92
 

@@ -72,8 +72,8 @@ class SetLightStateEffect:
                 state.saturation = self.color.saturation
                 state.color_mode = 'hs'
             elif isinstance(self.color, RGB):
-                state.xy = list(rgb_to_xy(self.color.r, self.color.g,
-                                          self.color.b))
+                state.xy = list(
+                    rgb_to_xy(self.color.r, self.color.g, self.color.b))
                 state.color_mode = 'xy'
 
         yield state

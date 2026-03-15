@@ -2,8 +2,9 @@ from copy import deepcopy
 import pytest
 
 from pyhuelights.model import EMPTY, update_from_object, Light as LightRaw
-from pyhuelights.core import Temperature
+from pyhuelights.core import Light, Temperature
 from pyhuelights.network import construct_body
+from pyhuelights.animations import SetLightStateEffect
 
 from utils import CustomResourceTestBase, SubResource, SubSubResource
 
@@ -189,8 +190,6 @@ class TestLightRaw:
 
     @pytest.mark.asyncio
     async def test_light_set_temperature_conversion(self):
-        from pyhuelights.core import Light
-        from pyhuelights.animations import SetLightStateEffect
         light_model = LightRaw()
         update_from_object(light_model, "id", LIGHT_JSON)
         light = Light(light_model)
