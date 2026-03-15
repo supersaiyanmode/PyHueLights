@@ -2,9 +2,11 @@ import pytest
 from pyhuelights.core import Light, Temperature, HueSat, RGB
 from pyhuelights.colorutils import rgb_to_xy, xy_to_rgb
 from pyhuelights.model import Light as LightRaw, update_from_object
+from pyhuelights.animations import SetLightStateEffect
 
 
-def test_lights_abstraction():
+@pytest.mark.asyncio
+async def test_lights_abstraction():
     light_model = LightRaw()
     # Initialize with some data.
     data = {
@@ -31,32 +33,46 @@ def test_lights_abstraction():
 
     light_obj = Light(light_model)
 
+    # Test read-only properties.
+    assert light_obj.on is True
+    assert light_obj.reachable is True
+
     # Test brightness.
     assert light_obj.brightness == 100
     light_obj.brightness = 200
     assert light_model.state.brightness == 200
     assert light_model.dirty_flag["state"] is True
 
-    # Test color (xy mode initially returns RGB in my current implementation).
+    # Test color getter (xy mode initially returns RGB in my current implementation).
     assert isinstance(light_obj.color, RGB)
 
-    # Change color to temperature.
+    # Change color to temperature using effect.
     new_color = Temperature(3000)
-    light_obj.color = new_color
+    effect = SetLightStateEffect(on=True, color=new_color)
+    async for _ in effect.update_state(light_obj):
+        pass
+
     assert light_model.state.temperature == 3000
     assert light_model.state.color_mode == 'ct'
 
-    # Test color (ct mode).
+    # Test color getter (ct mode).
     assert isinstance(light_obj.color, Temperature)
     assert light_obj.color.value == 3000
 
-    # Change color to HueSat.
+    # Change color to HueSat using effect.
     new_hs = HueSat(10000, 200)
-    light_obj.color = new_hs
+    effect = SetLightStateEffect(on=True, color=new_hs)
+    async for _ in effect.update_state(light_obj):
+        pass
+
     assert light_model.state.hue == 10000
     assert light_model.state.saturation == 200
     assert light_model.state.color_mode == 'hs'
     assert isinstance(light_obj.color, HueSat)
+
+    # Verify color setter is removed.
+    with pytest.raises(AttributeError):
+        light_obj.color = new_color
 
 
 def test_rgb_to_xy_to_rgb():

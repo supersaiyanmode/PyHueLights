@@ -187,13 +187,18 @@ class TestLightRaw:
         update_from_object(light, "id", obj)
         assert light.state.temperature == 2000
 
-    def test_light_set_temperature_conversion(self):
+    @pytest.mark.asyncio
+    async def test_light_set_temperature_conversion(self):
         from pyhuelights.core import Light
+        from pyhuelights.animations import SetLightStateEffect
         light_model = LightRaw()
         update_from_object(light_model, "id", LIGHT_JSON)
         light = Light(light_model)
 
-        light.color = Temperature(2000)
+        effect = SetLightStateEffect(on=True, color=Temperature(2000))
+        async for _ in effect.update_state(light):
+            pass
+
         assert construct_body(light_model) == {
             'state': {
                 'colormode': 'ct',
@@ -201,7 +206,10 @@ class TestLightRaw:
             }
         }
 
-        light.color = Temperature(6500)
+        effect = SetLightStateEffect(on=True, color=Temperature(6500))
+        async for _ in effect.update_state(light):
+            pass
+
         assert construct_body(light_model) == {
             'state': {
                 'colormode': 'ct',

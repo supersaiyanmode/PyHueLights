@@ -75,12 +75,18 @@ class Light:
 
     @property
     def metadata(self) -> LightMetadata:
-        return LightMetadata(
-            type=self._model.type,
-            model_id=self._model.model_id,
-            software_version=self._model.software_version,
-            name=self._model.name
-        )
+        return LightMetadata(type=self._model.type,
+                             model_id=self._model.model_id,
+                             software_version=self._model.software_version,
+                             name=self._model.name)
+
+    @property
+    def reachable(self) -> bool:
+        return self._model.state.reachable
+
+    @property
+    def on(self) -> bool:
+        return self._model.state.on
 
     @property
     def capabilities(self) -> LightCapabilities:
@@ -91,11 +97,9 @@ class Light:
         if "ct" in control:
             models.append(Temperature)
 
-        return LightCapabilities(
-            control=control,
-            streaming=self._model.capabilities.streaming,
-            supported_color_models=models
-        )
+        return LightCapabilities(control=control,
+                                 streaming=self._model.capabilities.streaming,
+                                 supported_color_models=models)
 
     @property
     def color(self) -> Color:
@@ -111,22 +115,6 @@ class Light:
 
         raise ValueError(
             f"Unknown or unsupported color mode: {state.color_mode}")
-
-    @color.setter
-    def color(self, value: Color) -> None:
-        state = self._model.state
-        if isinstance(value, Temperature):
-            state.temperature = value.value
-            state.color_mode = 'ct'
-        elif isinstance(value, HueSat):
-            state.hue = value.hue
-            state.saturation = value.saturation
-            state.color_mode = 'hs'
-        elif isinstance(value, RGB):
-            state.xy = list(rgb_to_xy(value.r, value.g, value.b))
-            state.color_mode = 'xy'
-        else:
-            raise ValueError("Expected Temperature, HueSat, or RGB instance.")
 
     @property
     def brightness(self) -> int | None:

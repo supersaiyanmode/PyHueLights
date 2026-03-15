@@ -2,7 +2,8 @@ import time
 import asyncio
 from typing import Any, AsyncGenerator
 
-from pyhuelights.core import Color, Light
+from pyhuelights.core import Color, Light, RGB, Temperature, HueSat
+from pyhuelights.colorutils import rgb_to_xy
 
 
 async def linear_transition(start, end, steps) -> AsyncGenerator[Any, None]:
@@ -54,17 +55,28 @@ class SetLightStateEffect:
         self.transition_time = transition_time
 
     async def update_state(self, light: Light) -> AsyncGenerator[Any, None]:
+        state = light._model.state
         if self.transition_time is not None:
-            light._model.state.transition_time = self.transition_time
+            state.transition_time = self.transition_time
 
-        light._model.state.on = self.on
+        state.on = self.on
         if self.brightness is not None:
             light.brightness = self.brightness
 
         if self.color is not None:
-            light.color = self.color
+            if isinstance(self.color, Temperature):
+                state.temperature = self.color.value
+                state.color_mode = 'ct'
+            elif isinstance(self.color, HueSat):
+                state.hue = self.color.hue
+                state.saturation = self.color.saturation
+                state.color_mode = 'hs'
+            elif isinstance(self.color, RGB):
+                state.xy = list(rgb_to_xy(self.color.r, self.color.g,
+                                          self.color.b))
+                state.color_mode = 'xy'
 
-        yield light._model.state
+        yield state
 
 
 class SwitchOnEffect(SetLightStateEffect):
