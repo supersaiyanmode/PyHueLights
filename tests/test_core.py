@@ -33,20 +33,17 @@ async def test_lights_abstraction():
 
     light_obj = Light(light_model)
 
-    # Test read-only properties.
     assert light_obj.on is True
     assert light_obj.reachable is True
 
-    # Test brightness.
     assert light_obj.brightness == 100
     light_obj.brightness = 200
     assert light_model.state.brightness == 200
     assert light_model.dirty_flag["state"] is True
 
-    # Test color getter (xy mode initially returns RGB in my current implementation).
+    # xy mode returns RGB.
     assert isinstance(light_obj.color, RGB)
 
-    # Change color to temperature using effect.
     new_color = Temperature(3000)
     effect = SetLightStateEffect(on=True, color=new_color)
     async for _ in effect.update_state(light_obj):
@@ -55,11 +52,9 @@ async def test_lights_abstraction():
     assert light_model.state.temperature == 3000
     assert light_model.state.color_mode == 'ct'
 
-    # Test color getter (ct mode).
     assert isinstance(light_obj.color, Temperature)
     assert light_obj.color.value == 3000
 
-    # Change color to HueSat using effect.
     new_hs = HueSat(10000, 200)
     effect = SetLightStateEffect(on=True, color=new_hs)
     async for _ in effect.update_state(light_obj):
@@ -70,7 +65,6 @@ async def test_lights_abstraction():
     assert light_model.state.color_mode == 'hs'
     assert isinstance(light_obj.color, HueSat)
 
-    # Verify color setter is removed.
     with pytest.raises(AttributeError):
         light_obj.color = new_color
 
@@ -138,7 +132,8 @@ def test_xy_to_rgb_boundaries():
 
 
 def test_grayscale():
-    # Grayscale colors should have the same x, y coordinates for different brightness levels.
+    # Grayscale colors should have the same x, y coordinates for different
+    # brightness levels.
     for i in range(16, 256, 16):
         x, y = rgb_to_xy(i, i, i)
         assert x == pytest.approx(0.3127, abs=0.01)

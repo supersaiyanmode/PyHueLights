@@ -200,6 +200,7 @@ class TestLightRaw:
 
         assert construct_body(light_model) == {
             'state': {
+                'on': True,
                 'colormode': 'ct',
                 'ct': 500
             }
@@ -211,6 +212,7 @@ class TestLightRaw:
 
         assert construct_body(light_model) == {
             'state': {
+                'on': True,
                 'colormode': 'ct',
                 'ct': 153
             }
